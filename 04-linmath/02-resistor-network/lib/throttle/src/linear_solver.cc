@@ -34,7 +34,7 @@ matrix_d nonsingular_solver(const matrix_d &coefs, const matrix_d &col) {
   for (matrix_d::size_type i = 0; i < rows; i++) {
     auto first_row = coefs[i];
     auto second_row = col[i];
-    ranges::copy(ranges::views::concat(first_row, second_row), xtnd_matrix.begin());
+    ranges::copy(ranges::views::concat(first_row, second_row), xtnd_matrix.begin() + i * cols);
   }
 
   return nonsingular_solver(std::move(xtnd_matrix));
