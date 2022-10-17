@@ -109,15 +109,18 @@ std::optional<std::pair<circuits::resistor_network, std::vector<circuit_parser::
 } // namespace circuit_parser
 
 int main(int argc, char *argv[]) {
-  auto [network, result] = circuit_parser::parse_circuit().value();
+  auto parsed = circuit_parser::parse_circuit();
+
+  if (!parsed) {
+    std::cerr << "Aborting...\n";
+    return EXIT_FAILURE;
+  }
+
+  auto [network, result] = parsed.value();
   auto potentials = network.solve();
 
   for (const auto &v : result) {
     std::cout << v.first << " -- " << v.second << ": "
               << (potentials[v.first] - potentials[v.second] + v.emf.value_or(0.0)) / v.res << " A\n";
-  }
-
-  for (const auto &v : potentials) {
-    std::cout << v.first << " -- " << v.second << "\n";
   }
 }

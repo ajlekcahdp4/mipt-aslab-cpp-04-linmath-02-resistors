@@ -28,49 +28,42 @@ void resistor_network::insert(unsigned int first, unsigned int second, double re
 std::unordered_map<unsigned, double> resistor_network::solve() const {
   if (m_map.empty()) throw std::invalid_argument{"Network can't be empty"};
 
-  unsigned min_index = m_map.begin()->first;
-  unsigned max_index = std::prev(m_map.end())->first;
+  std::unordered_map<unsigned, decltype(m_map)::const_iterator> iterator_map;
+  std::unordered_map<unsigned, unsigned> index_map;
 
-  auto                                         size = max_index - min_index + 1;
+  unsigned j = 0;
+  for (auto start = std::next(m_map.begin()), end = m_map.end(); start != end; ++start, ++j) {
+    iterator_map[j] = start;
+    index_map[start->first] = j;
+  }
+
+  auto size = iterator_map.size();
+
   throttle::linmath::contiguous_matrix<double> extended_matrix{size, size + 1};
 
-  for (const auto &vertex : m_map) {
-    const auto  index = vertex.first - min_index;
-    const auto &map = vertex.second;
+  for (const auto &v : iterator_map) {
+    const auto &[index, map_iter] = v;
+    auto row = extended_matrix[index];
 
-    for (const auto &another : map) {
-      const auto another_index = another.first - min_index;
-      const auto [res, emf] = another.second;
-      auto row = extended_matrix[index];
+    for (const auto &a : map_iter->second) {
+      auto [res, emf] = a.second;
 
-      if (throttle::is_roughly_equal(res, 0.0)) {
-        ranges::fill(row, 0);
-
-        row[index] += (index == 0 ? 0.0 : 1.0);
-        row[another_index] -= 1.0;
-        row[size] -= emf;
-
-        break;
+      row[index] += 1.0 / res;
+      if (a.first != m_map.begin()->first) {
+        auto corrensponding_index = index_map[a.first];
+        row[corrensponding_index] -= 1.0 / res;
       }
-
-      row[index] += (index == 0 ? 0.0 : 1.0 / res);
-      row[another_index] -= 1.0 / res;
+      
       row[size] -= emf / res;
     }
   }
-
-  for (unsigned i = 0; i < size; ++i) {
-    for (const auto &v : extended_matrix[i]) {
-      std::cout << v << "\t";
-    }
-    std::cout << "\n";
-  }
-
+  
   auto potentials = throttle::nonsingular_solver(std::move(extended_matrix));
   auto result = std::unordered_map<unsigned, double>{};
 
+  result[m_map.begin()->first] = 0.0;
   for (unsigned i = 0; i < size; ++i) {
-    result[i + min_index] = potentials[i][0];
+    result[iterator_map[i]->first] = potentials[i][0];
   }
 
   return result;
