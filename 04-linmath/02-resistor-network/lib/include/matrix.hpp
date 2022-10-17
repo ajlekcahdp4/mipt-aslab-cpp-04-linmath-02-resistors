@@ -42,6 +42,7 @@ concept models_ordered_ring = requires(T a, T b) {
 template <typename T>
 requires models_ordered_ring<T>
 class matrix {
+public:
   using value_type = T;
   using reference = T &;
   using const_reference = const T &;
