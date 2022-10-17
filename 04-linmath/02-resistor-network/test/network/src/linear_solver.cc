@@ -8,10 +8,9 @@ inline matrix_d nonsingular_solver(matrix_d &&xtnd_matrix) {
 
   matrix_d res{rows, 1};
   for (unsigned i = 0; i < rows; i++) {
-    if (is_roughly_equal(xtnd_matrix[i][i], 0)) {
-      if (!is_roughly_equal(xtnd_matrix[i][cols - 1], 0)) throw std::runtime_error("singular matrix provided");
-      return 0;
-    } else
+    if (is_roughly_equal(xtnd_matrix[i][i], 0))
+      throw std::runtime_error("singular matrix provided");
+    else
       res[i][0] = xtnd_matrix[i][cols - 1] / xtnd_matrix[i][i];
   }
   return res;
@@ -20,6 +19,7 @@ inline matrix_d nonsingular_solver(matrix_d &&xtnd_matrix) {
 inline matrix_d linear_solver(const matrix_d &coefs, const matrix_d &col) {
   auto rows = coefs.rows();
   auto cols = coefs.cols() + 1;
+  if (!coefs.square()) throw std::runtime_error("singular matrix provided");
   matrix_d xtnd_matrix{rows, cols};
   for (unsigned i = 0; i < rows; i++) {
     auto first_row = coefs[i];
