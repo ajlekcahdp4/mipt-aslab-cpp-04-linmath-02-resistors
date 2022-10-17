@@ -77,7 +77,7 @@ struct error_handler {
 
 struct edge_class : x3::annotate_on_success, error_handler {};
 
-std::optional<circuits::resistor_network> parse_circuit() {
+std::optional<std::pair<circuits::resistor_network, std::vector<circuit_parser::graph::edge>>> parse_circuit() {
   circuits::resistor_network network;
   std::vector<circuit_parser::graph::edge> result;
 
@@ -97,24 +97,17 @@ std::optional<circuits::resistor_network> parse_circuit() {
   const auto edges = +edge;
   const auto parser = with<x3::error_handler_tag>(std::ref(error_handler))[edges];
 
-  bool r = phrase_parse(input.begin(), input.end(), parser, space, result);
-
-  if (!r) {
-    std::cout << "Invalid input\n";
-  }
+  if (!phrase_parse(input.begin(), input.end(), parser, space, result)) return std::nullopt;
 
   for (const auto &v : result) {
     network.insert(v.first, v.second, v.res, v.emf.value_or(0.0));
   }
 
-  return network;
+  return {std::make_pair(network, result)};
 }
 
 } // namespace circuit_parser
 
 int main(int argc, char *argv[]) {
-  unsigned first, second;
-  double res = 0, emf = 0;
-
-  auto network = circuit_parser::parse_circuit();
+  auto [network, result] = circuit_parser::parse_circuit().value();
 }

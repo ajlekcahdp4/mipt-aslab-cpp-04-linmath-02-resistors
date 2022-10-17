@@ -13,6 +13,8 @@
 #include <cmath>
 #include <type_traits>
 #include <concepts>
+#include <utility>
+#include <functional>
 
 namespace throttle {
 
