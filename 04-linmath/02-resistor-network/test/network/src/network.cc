@@ -28,6 +28,8 @@
 
 #include <boost/spirit/home/x3.hpp>
 #include <boost/spirit/home/x3/support/ast/position_tagged.hpp>
+#include <boost/spirit/home/x3/support/utility/annotate_on_success.hpp>
+#include <boost/spirit/home/x3/support/utility/error_reporting.hpp>
 
 #include "linear_solver.hpp"
 #include "resistor_network.hpp"
@@ -41,7 +43,7 @@ namespace ascii = x3::ascii;
 namespace circuit_parser {
 
 constexpr auto uint_ = x3::int_parser<unsigned>{};
-constexpr auto double_ = x3::real_parser<double>{};
+using x3::double_;
 
 namespace graph {
 struct edge : x3::position_tagged {
@@ -60,14 +62,25 @@ namespace circuit_parser {
 
 struct edge_class;
 x3::rule<edge_class, circuit_parser::graph::edge> const edge = "edge";
-const auto edge_def = uint_ > '-' > '-' > uint_ > ',' > double_ > ';' >> -(double_ > 'V');
+const auto edge_def = uint_ > '-' > '-' > uint_ > ',' > double_ > ';' >> -(double_ >> 'V');
 
 BOOST_SPIRIT_DEFINE(edge);
+
+struct error_handler {
+  x3::error_handler_result on_error(auto &first, auto const &last, auto const &x, auto const &context) {
+    auto &error_handler = x3::get<x3::error_handler_tag>(context).get();
+    std::string message = "Error! Expecting: " + x.which() + " here:";
+    error_handler(x.where(), message);
+    return x3::error_handler_result::fail;
+  }
+};
+
+struct edge_class : x3::annotate_on_success, error_handler {};
 
 std::optional<circuits::resistor_network> parse_circuit() {
   circuits::resistor_network network;
   std::vector<circuit_parser::graph::edge> result;
-  
+
   using ascii::space;
 
   using x3::phrase_parse;
@@ -75,9 +88,16 @@ std::optional<circuits::resistor_network> parse_circuit() {
   using iter_type = std::string::const_iterator;
 
   std::string input;
+  std::noskipws(std::cin);
   std::copy(std::istream_iterator<char>{std::cin}, std::istream_iterator<char>{}, std::back_inserter(input));
 
-  bool r = phrase_parse(input.begin(), input.end(), +edge_def, space, result);
+  using error_handler_type = x3::error_handler<iter_type>;
+  error_handler_type error_handler{input.begin(), input.end(), std::cerr};
+
+  const auto edges = +edge;
+  const auto parser = with<x3::error_handler_tag>(std::ref(error_handler))[edges];
+
+  bool r = phrase_parse(input.begin(), input.end(), parser, space, result);
 
   if (!r) {
     std::cout << "Invalid input\n";
