@@ -7,7 +7,7 @@
 #include "contiguous_matrix.hpp"
 #include "equal.hpp"
 
-namespace circuits {
+namespace throttle {
 
 matrix_d nonsingular_solver(matrix_d &&xtnd_matrix) {
   auto cols = xtnd_matrix.cols();

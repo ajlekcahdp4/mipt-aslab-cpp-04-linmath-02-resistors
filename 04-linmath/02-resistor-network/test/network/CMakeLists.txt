@@ -1,7 +1,5 @@
 set(NET_SOURCES
   src/network.cc
-  src/resistor_network.cc
-  src/linear_solver.cc
 )
 
 FetchContent_Declare(
@@ -16,7 +14,7 @@ if (NOT scn_POPULATED)
 endif()
 
 add_executable(network ${NET_SOURCES})
-target_link_libraries(network throttle Boost::program_options scn)
+target_link_libraries(network throttle circuits Boost::program_options scn)
 
 install(TARGETS network DESTINATION ${CMAKE_CURRENT_SOURCE_DIR}/bin)
 

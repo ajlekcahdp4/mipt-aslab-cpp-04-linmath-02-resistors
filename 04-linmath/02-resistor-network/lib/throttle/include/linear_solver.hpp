@@ -2,7 +2,7 @@
 
 #include "matrix.hpp"
 
-namespace circuits {
+namespace throttle {
 using matrix_d = throttle::linmath::matrix<double>;
 
 matrix_d nonsingular_solver(matrix_d &&xtnd_matrix);

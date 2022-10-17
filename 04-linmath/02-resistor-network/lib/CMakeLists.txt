@@ -1,19 +1,5 @@
-add_library(throttle INTERFACE)
-target_include_directories(throttle INTERFACE include)
-
-set(UNIT_TEST_SOURCES
-  test/test_vector.cc
-  test/test_contiguous_matrix.cc
-  test/test_matrix.cc
-  test/main.cc
-)
-
-if (ENABLE_GTEST)
-  add_executable(unit_test ${UNIT_TEST_SOURCES})
-  target_include_directories(unit_test PRIVATE src include)
-  target_link_libraries(unit_test throttle ${GTEST_BOTH_LIBRARIES})
-  gtest_discover_tests(unit_test)
-endif()
+add_subdirectory(throttle)
+add_subdirectory(circuits)
 
 include(FetchContent)
 find_package(range-v3)
@@ -32,5 +18,3 @@ if (NOT range-v3_FOUND)
 
   FetchContent_MakeAvailable(range-v3)
 endif()
-
-target_link_libraries(throttle INTERFACE range-v3::range-v3)
