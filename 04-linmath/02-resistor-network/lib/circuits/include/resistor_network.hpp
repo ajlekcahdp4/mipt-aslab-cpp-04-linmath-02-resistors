@@ -7,6 +7,7 @@
 #include <vector>
 
 #include <map>
+#include <unordered_map>
 
 #pragma once
 
@@ -18,7 +19,7 @@ class resistor_network {
 
 public:
   void insert(unsigned first, unsigned second, double resistance, double emf);
-  throttle::containers::vector<std::pair<double, double>> solve() const;
+  std::unordered_map<unsigned, double> solve() const;
 };
 
 } // namespace circuits
