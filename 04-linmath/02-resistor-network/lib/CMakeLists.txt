@@ -1,6 +1,3 @@
-add_subdirectory(throttle)
-add_subdirectory(circuits)
-
 include(FetchContent)
 find_package(range-v3)
 
@@ -18,3 +15,7 @@ if (NOT range-v3_FOUND)
 
   FetchContent_MakeAvailable(range-v3)
 endif()
+
+
+add_subdirectory(throttle)
+add_subdirectory(circuits)
