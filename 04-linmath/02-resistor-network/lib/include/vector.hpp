@@ -61,7 +61,9 @@ private:
   }
 
 public:
-  static size_type amortized_buffer_size(size_type x) { return size_type{1} << (CHAR_BIT * sizeof(size_type) - utility::clz(x)); }
+  static size_type amortized_buffer_size(size_type x) {
+    return size_type{1} << (CHAR_BIT * sizeof(size_type) - utility::clz(x));
+  }
 
 public:
   vector()
@@ -173,7 +175,7 @@ public:
         }
       } catch (...) {
         for (size_type j = 0; j < i; ++j) {
-          pop_back(); 
+          pop_back();
         }
         throw;
       }
@@ -234,8 +236,8 @@ public:
     return (*this)[index];
   }
 
-  iterator begin() { return iterator{m_buffer_ptr}; }
-  iterator end() { return iterator{m_past_end_ptr}; }
+  iterator       begin() { return iterator{m_buffer_ptr}; }
+  iterator       end() { return iterator{m_past_end_ptr}; }
   const_iterator begin() const { return cbegin(); }
   const_iterator end() const { return cend(); }
 

@@ -29,7 +29,7 @@ template <typename T> struct contiguous_iterator {
   using value_type = T;
   using reference = T &;
   using pointer = T *;
-  
+
 private:
   pointer m_ptr;
 
@@ -37,7 +37,6 @@ private:
   using const_pointer = const T *;
 
 public:
-
   contiguous_iterator(pointer ptr = nullptr) : m_ptr{ptr} {}
 
   // clang-format off
@@ -61,8 +60,8 @@ public:
   }
 
   contiguous_iterator operator-(difference_type n) const { return contiguous_iterator{m_ptr - n}; }
-  difference_type operator-(const contiguous_iterator other) const { return (m_ptr - other.m_ptr); }
-  auto operator<=>(const contiguous_iterator &) const = default;
+  difference_type     operator-(const contiguous_iterator other) const { return (m_ptr - other.m_ptr); }
+  auto                operator<=>(const contiguous_iterator &) const = default;
 
   reference operator[](difference_type n) const { return *(*this + n); }
 };
@@ -101,8 +100,8 @@ public:
   }
 
   const_contiguous_iterator operator-(difference_type n) const { return contiguous_iterator{m_ptr - n}; }
-  difference_type operator-(const const_contiguous_iterator other) const { return (m_ptr - other.m_ptr); }
-  auto operator<=>(const const_contiguous_iterator &) const = default;
+  difference_type           operator-(const const_contiguous_iterator other) const { return (m_ptr - other.m_ptr); }
+  auto                      operator<=>(const const_contiguous_iterator &) const = default;
 
   reference operator[](difference_type n) const { return *(*this + n); }
 };

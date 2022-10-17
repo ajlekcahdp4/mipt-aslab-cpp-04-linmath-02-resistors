@@ -8,7 +8,8 @@
 #include "equal.hpp"
 
 namespace circuits {
-inline matrix_d nonsingular_solver(matrix_d &&xtnd_matrix) {
+
+matrix_d nonsingular_solver(matrix_d &&xtnd_matrix) {
   auto cols = xtnd_matrix.cols();
   auto rows = xtnd_matrix.rows();
 
@@ -23,7 +24,7 @@ inline matrix_d nonsingular_solver(matrix_d &&xtnd_matrix) {
   return res;
 }
 
-inline matrix_d linear_solver(const matrix_d &coefs, const matrix_d &col) {
+matrix_d nonsingular_solver(const matrix_d &coefs, const matrix_d &col) {
   auto rows = coefs.rows();
   auto cols = coefs.cols() + 1;
 
@@ -38,4 +39,5 @@ inline matrix_d linear_solver(const matrix_d &coefs, const matrix_d &col) {
 
   return nonsingular_solver(std::move(xtnd_matrix));
 }
+
 } // namespace circuits

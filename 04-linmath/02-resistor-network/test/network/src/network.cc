@@ -47,8 +47,8 @@ using x3::double_;
 
 namespace graph {
 struct edge : x3::position_tagged {
-  unsigned first, second;
-  double res;
+  unsigned                first, second;
+  double                  res;
   boost::optional<double> emf;
 };
 } // namespace graph
@@ -68,7 +68,7 @@ BOOST_SPIRIT_DEFINE(edge);
 
 struct error_handler {
   x3::error_handler_result on_error(auto &first, auto const &last, auto const &x, auto const &context) {
-    auto &error_handler = x3::get<x3::error_handler_tag>(context).get();
+    auto       &error_handler = x3::get<x3::error_handler_tag>(context).get();
     std::string message = "Error! Expecting: " + x.which() + " here:";
     error_handler(x.where(), message);
     return x3::error_handler_result::fail;
@@ -78,7 +78,7 @@ struct error_handler {
 struct edge_class : x3::annotate_on_success, error_handler {};
 
 std::optional<std::pair<circuits::resistor_network, std::vector<circuit_parser::graph::edge>>> parse_circuit() {
-  circuits::resistor_network network;
+  circuits::resistor_network               network;
   std::vector<circuit_parser::graph::edge> result;
 
   using ascii::space;
@@ -108,6 +108,4 @@ std::optional<std::pair<circuits::resistor_network, std::vector<circuit_parser::
 
 } // namespace circuit_parser
 
-int main(int argc, char *argv[]) {
-  auto [network, result] = circuit_parser::parse_circuit().value();
-}
+int main(int argc, char *argv[]) { auto [network, result] = circuit_parser::parse_circuit().value(); }

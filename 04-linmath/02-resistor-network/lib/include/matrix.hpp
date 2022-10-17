@@ -50,7 +50,7 @@ public:
   using const_pointer = const T *;
   using size_type = typename std::size_t;
 
-  contiguous_matrix<T> m_contiguous_matrix;
+  contiguous_matrix<T>        m_contiguous_matrix;
   containers::vector<pointer> m_rows_vec;
 
   void update_rows_vec() {
@@ -81,20 +81,10 @@ public:
     update_rows_vec();
   }
 
-  matrix(const contiguous_matrix<T> &cont) : m_contiguous_matrix{cont} {
-    update_rows_vec();
-  }
-
-  matrix(contiguous_matrix<T> &&c_matrix) : m_contiguous_matrix(std::move(c_matrix)) {
-    update_rows_vec();
-  }
-
-  static matrix zero(size_type rows, size_type cols) {
-    return matrix<T>{rows, cols};
-  }
-  static matrix unity(size_type size) {
-    return matrix{std::move(contiguous_matrix<T>::unity(size))};
-  }
+  matrix(const contiguous_matrix<T> &cont) : m_contiguous_matrix{cont} { update_rows_vec(); }
+  matrix(contiguous_matrix<T> &&c_matrix) : m_contiguous_matrix(std::move(c_matrix)) { update_rows_vec(); }
+  static matrix zero(size_type rows, size_type cols) { return matrix<T>{rows, cols}; }
+  static matrix unity(size_type size) { return matrix{std::move(contiguous_matrix<T>::unity(size))}; }
 
   template <std::input_iterator it> static matrix diag(size_type size, it start, it finish) {
     matrix ret{size, size, value_type{}};
@@ -117,36 +107,17 @@ private:
     using iterator = utility::contiguous_iterator<value_type>;
     using const_iterator = utility::const_contiguous_iterator<value_type>;
 
-    reference operator[](size_type index) {
-      return m_row[index];
-    }
-    const_reference operator[](size_type index) const {
-      return m_row[index];
-    }
+    reference       operator[](size_type index) { return m_row[index]; }
+    const_reference operator[](size_type index) const { return m_row[index]; }
 
-    iterator begin() {
-      return iterator{m_row};
-    }
-    iterator end() {
-      return iterator{m_past_row};
-    }
+    iterator begin() { return iterator{m_row}; }
+    iterator end() { return iterator{m_past_row}; }
 
-    const_iterator begin() const {
-      return const_iterator{m_row};
-    }
-    const_iterator end() const {
-      return const_iterator{m_past_row};
-    }
-    const_iterator cbegin() const {
-      return const_iterator{m_row};
-    }
-    const_iterator cend() const {
-      return const_iterator{m_past_row};
-    }
-
-    size_type size() const {
-      return m_past_row - m_row;
-    }
+    const_iterator begin() const { return const_iterator{m_row}; }
+    const_iterator end() const { return const_iterator{m_past_row}; }
+    const_iterator cbegin() const { return const_iterator{m_row}; }
+    const_iterator cend() const { return const_iterator{m_past_row}; }
+    size_type size() const { return m_past_row - m_row; }
   };
 
   class const_proxy_row {
@@ -159,44 +130,22 @@ private:
     using iterator = utility::const_contiguous_iterator<value_type>;
     using const_iterator = iterator;
 
-    const_reference operator[](size_type index) const {
-      return m_row[index];
-    }
-    iterator begin() const {
-      return iterator{m_row};
-    }
-    iterator end() const {
-      return iterator{m_past_row};
-    }
-    const_iterator cbegin() const {
-      return const_iterator{m_row};
-    }
-    const_iterator cend() const {
-      return const_iterator{m_past_row};
-    }
+    const_reference operator[](size_type index) const { return m_row[index]; }
+    iterator        begin() const { return iterator{m_row}; }
+    iterator        end() const { return iterator{m_past_row}; }
+    const_iterator  cbegin() const { return const_iterator{m_row}; }
+    const_iterator  cend() const { return const_iterator{m_past_row}; }
 
-    size_type size() const {
-      return m_past_row - m_row;
-    }
+    size_type size() const { return m_past_row - m_row; }
   };
 
 public:
-  proxy_row operator[](size_type index) {
-    return proxy_row{m_rows_vec[index], cols()};
-  }
-  const_proxy_row operator[](size_type index) const {
-    return const_proxy_row{m_rows_vec[index], cols()};
-  }
+  proxy_row       operator[](size_type index) { return proxy_row{m_rows_vec[index], cols()}; }
+  const_proxy_row operator[](size_type index) const { return const_proxy_row{m_rows_vec[index], cols()}; }
 
-  size_type rows() const {
-    return m_contiguous_matrix.rows();
-  }
-  size_type cols() const {
-    return m_contiguous_matrix.cols();
-  }
-  bool square() const {
-    return (cols() == rows());
-  }
+  size_type rows() const { return m_contiguous_matrix.rows(); }
+  size_type cols() const { return m_contiguous_matrix.cols(); }
+  bool      square() const { return (cols() == rows()); }
 
   bool equal(const matrix &other, const value_type &precision = default_precision<value_type>::m_prec) const {
     if ((rows() != other.rows()) || (cols() != other.cols())) return false;
@@ -223,15 +172,13 @@ public:
     return *this;
   }
 
-  void swap_rows(size_type idx1, size_type idx2) {
-    std::swap(m_rows_vec[idx1], m_rows_vec[idx2]);
-  }
+  void swap_rows(size_type idx1, size_type idx2) { std::swap(m_rows_vec[idx1], m_rows_vec[idx2]); }
 
 public:
   std::pair<size_type, value_type> max_in_col_greater_eq(size_type col, size_type minimum_row) {
     size_type max_row_idx = minimum_row;
-    auto rows = this->rows();
-    auto cmp = std::less<value_type>{};
+    auto      rows = this->rows();
+    auto      cmp = std::less<value_type>{};
 
     for (size_type row = minimum_row; row < rows; row++) {
       max_row_idx = (cmp(std::abs((*this)[max_row_idx][col]), std::abs((*this)[row][col])) ? row : max_row_idx);
@@ -239,9 +186,7 @@ public:
     return std::make_pair(max_row_idx, (*this)[max_row_idx][col]);
   }
 
-  std::pair<size_type, value_type> max_in_col(size_type col) {
-    return max_in_col_greater_eq(col, 0);
-  }
+  std::pair<size_type, value_type> max_in_col(size_type col) { return max_in_col_greater_eq(col, 0); }
 
   std::optional<std::pair<size_type, value_type>> first_non_zero_in_col(size_type col, size_type start_row = 0) const {
     for (size_type m = start_row; m < rows(); ++m) {
@@ -254,7 +199,7 @@ public:
 public:
   std::optional<int> convert_to_row_echelon() requires std::is_floating_point_v<value_type> {
     matrix &mat = *this;
-    int sign = 1;
+    int     sign = 1;
 
     for (size_type i = 0; i < rows(); i++) {
       auto [pivot_row, pivot_elem] = max_in_col_greater_eq(i, i);
@@ -285,8 +230,8 @@ public:
     if (!square()) throw std::runtime_error("Mismatched matrix size for determinant");
 
     value_type sign = 1;
-    auto size = rows();
-    matrix mat{*this};
+    auto       size = rows();
+    matrix     mat{*this};
 
     for (size_type k = 0; k < size - 1; ++k) {
       auto result = mat.first_non_zero_in_col(k, k);
@@ -314,7 +259,7 @@ public:
     if (!square()) throw std::runtime_error("Mismatched matrix size for determinant");
 
     matrix tmp{*this};
-    auto res = tmp.convert_to_row_echelon();
+    auto   res = tmp.convert_to_row_echelon();
     if (!res) return value_type{};
 
     value_type val = res.value();

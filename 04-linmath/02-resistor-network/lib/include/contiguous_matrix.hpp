@@ -10,9 +10,9 @@
 
 #pragma once
 
+#include "equal.hpp"
 #include "utility.hpp"
 #include "vector.hpp"
-#include "equal.hpp"
 
 #include <algorithm>
 #include <functional>
@@ -30,20 +30,22 @@ namespace throttle {
 namespace linmath {
 
 template <typename T>
-concept models_ring = requires (T a, T b) {
+concept models_ring = requires(T a, T b) {
   T{};
   T{0};
   T{1};
 
-  {a + b} -> std::same_as<T>;
-  {a - b} -> std::same_as<T>;
-  {a * b} -> std::same_as<T>;
-  {a / b} -> std::same_as<T>;
+  { a + b } -> std::same_as<T>;
+  { a - b } -> std::same_as<T>;
+  { a *b } -> std::same_as<T>;
+  { a / b } -> std::same_as<T>;
 
   requires std::copyable<T>;
 };
 
-template <typename T> requires models_ring<T> class contiguous_matrix {
+template <typename T>
+requires models_ring<T>
+class contiguous_matrix {
 public:
   using value_type = T;
   using reference = T &;
@@ -162,7 +164,8 @@ public:
     return *this;
   }
 
-  bool equal(const contiguous_matrix &other, const value_type &precision = default_precision<value_type>::m_prec) const {
+  bool equal(const contiguous_matrix &other,
+             const value_type        &precision = default_precision<value_type>::m_prec) const {
     if ((rows() != other.rows()) || (cols() != other.cols())) return false;
     for (size_type i = 0; i < rows(); i++) {
       const auto first_row = (*this)[i];
