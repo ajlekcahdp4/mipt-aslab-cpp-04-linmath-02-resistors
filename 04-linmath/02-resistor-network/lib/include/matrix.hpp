@@ -81,6 +81,10 @@ public:
     update_rows_vec();
   }
 
+  matrix(const contiguous_matrix<T> &cont) : m_contiguous_matrix{cont} {
+    update_rows_vec();
+  }
+
   matrix(contiguous_matrix<T> &&c_matrix) : m_contiguous_matrix(std::move(c_matrix)) {
     update_rows_vec();
   }

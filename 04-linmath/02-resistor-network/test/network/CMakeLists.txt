@@ -1,6 +1,7 @@
 set(NET_SOURCES
   src/network.cc
   src/resistor_network.cc
+  src/linear_solver.cc
 )
 
 FetchContent_Declare(
