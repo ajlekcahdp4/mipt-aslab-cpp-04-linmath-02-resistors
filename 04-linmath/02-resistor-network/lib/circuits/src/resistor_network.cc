@@ -14,7 +14,7 @@
 #include <boost/functional/hash.hpp>
 namespace circuits {
 
-void resistor_network::insert(unsigned first, unsigned second, double resistance, double emf) {
+void connected_resistor_network::insert(unsigned first, unsigned second, double resistance, double emf) {
   if (first == second) throw std::invalid_argument("Circuit graph can't have loops");
 
   if (first > second) {
@@ -33,15 +33,16 @@ void resistor_network::insert(unsigned first, unsigned second, double resistance
   if (throttle::is_roughly_equal(resistance, 0.0)) m_short_circuits.push_back({first, second, emf});
 }
 
-std::pair<std::unordered_map<unsigned, double>, std::unordered_map<unsigned, std::unordered_map<unsigned, double>>>
-resistor_network::solve() const {
+connected_resistor_network::solution connected_resistor_network::solve() const {
   if (m_map.empty()) throw std::invalid_argument{"Network can't be empty"};
 
+  // Maps indexes 0, 1, .... to corrensponding iterators in the unordered map that represents the input.
   std::unordered_map<unsigned, decltype(m_map)::const_iterator> iterator_map;
-  std::unordered_map<unsigned, unsigned>                        index_map;
+  // Maps indexes from input to 0, 1, ....
+  std::unordered_map<unsigned, unsigned> index_map;
+  // Maps pairs of input indexes to current variable
   std::unordered_map<std::pair<unsigned, unsigned>, unsigned, boost::hash<std::pair<unsigned, unsigned>>>
-                                                              short_circuit_current_map;
-  std::unordered_map<unsigned, std::pair<unsigned, unsigned>> current_variable_pair_map;
+      short_circuit_current_map;
 
   unsigned j = 0;
   for (auto start = std::next(m_map.begin()), end = m_map.end(); start != end; ++start, ++j) {
@@ -54,7 +55,7 @@ resistor_network::solve() const {
 
   for (j = size; const auto &v : m_short_circuits) {
     short_circuit_current_map.insert({{v.first, v.second}, j});
-    current_variable_pair_map[j++] = {v.first, v.second};
+    ++j;
   }
 
   throttle::linmath::contiguous_matrix<double> extended_matrix{size + num_short_circuits,
@@ -68,11 +69,11 @@ resistor_network::solve() const {
       auto [res, emf] = a.second;
 
       if (throttle::is_roughly_equal(res, 0.0)) {
-        const auto initial_index = iterator_map[index]->first;
+        const auto initial_index = iterator_map.at(index)->first;
         const auto current_var =
             short_circuit_current_map.at((initial_index > a.first) ? std::make_pair(a.first, initial_index)
                                                                    : std::make_pair(initial_index, a.first));
-        row[current_var] = (initial_index > a.first ? -1.0 : 1.0);
+        row[current_var] += (initial_index > a.first ? -1.0 : 1.0);
         continue;
       }
 
@@ -111,8 +112,8 @@ resistor_network::solve() const {
   }
 #endif
 
+  // Solve the linear system of equations to find unkown potentials and currents.
   auto unknowns = throttle::nonsingular_solver(std::move(extended_matrix));
-  auto result_potentials = std::unordered_map<unsigned, double>{};
 
 #if 0
   for (unsigned i = 0; i < unknowns.rows(); ++i) {
@@ -123,17 +124,21 @@ resistor_network::solve() const {
   }
 #endif
 
+  auto result_potentials = solution_potentials{};
+  // Fill base node potential with zero.
   result_potentials[m_map.begin()->first] = 0.0;
   for (unsigned i = 0; i < size; ++i) {
     result_potentials[iterator_map[i]->first] = unknowns[i][0];
   }
 
-  auto result_currents = std::unordered_map<unsigned, std::unordered_map<unsigned, double>>{};
+  // Fill unkown currents that were found as a part of linear system of equations.
+  auto result_currents = solution_currents{};
   for (const auto &v : short_circuit_current_map) {
     result_currents[v.first.first][v.first.second] = unknowns[v.second][0];
     result_currents[v.first.second][v.first.first] = -unknowns[v.second][0];
   }
 
+  // Compute other currents from potentials, when there are no short-circuits.
   for (const auto &v : m_map) {
     for (const auto &c : v.second) {
       if (throttle::is_roughly_equal(c.second.first, 0.0)) continue;

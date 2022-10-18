@@ -77,8 +77,9 @@ struct error_handler {
 
 struct edge_class : x3::annotate_on_success, error_handler {};
 
-std::optional<std::pair<circuits::resistor_network, std::vector<circuit_parser::graph::edge>>> parse_circuit() {
-  circuits::resistor_network               network;
+std::optional<std::pair<circuits::connected_resistor_network, std::vector<circuit_parser::graph::edge>>>
+parse_circuit() {
+  circuits::connected_resistor_network     network;
   std::vector<circuit_parser::graph::edge> result;
 
   using ascii::space;
@@ -123,7 +124,7 @@ int main(int argc, char *argv[]) {
   for (const auto &v : potentials) {
     std::cout << v.first << ": " << v.second << " V\n";
   }
-#endif 
+#endif
 
   for (const auto &v : result) {
     std::cout << v.first << " -- " << v.second << ": " << currents[v.first][v.second] << " A\n";
