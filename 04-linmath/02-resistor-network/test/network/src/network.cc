@@ -44,19 +44,14 @@ namespace ascii = x3::ascii;
 namespace circuit_parser {
 
 namespace graph {
-struct edge : x3::position_tagged {
+struct network_edge : x3::position_tagged {
   unsigned                first, second;
   double                  res;
   boost::optional<double> emf;
-
-  edge() = default;
-  edge(unsigned p_first, unsigned p_second, double p_res, boost::optional<double> p_emf)
-      : first{p_first}, second{p_second}, res{p_res}, emf{p_emf} {}
 };
 
 } // namespace graph
 
-template <typename rule>
 struct error_handler {
   x3::error_handler_result on_error(auto &, auto const &, auto const &x, auto const &context) {
     auto       &error_handler = x3::get<x3::error_handler_tag>(context).get();
@@ -68,40 +63,33 @@ struct error_handler {
 
 } // namespace circuit_parser
 
-BOOST_FUSION_ADAPT_STRUCT(circuit_parser::graph::edge, (unsigned, first), (unsigned, second), (double, res),
-                          (boost::optional<double>, emf))
+BOOST_FUSION_ADAPT_STRUCT(circuit_parser::graph::network_edge, first, second, res, emf)
 
 namespace circuit_parser {
 
-struct rule_d : error_handler<rule_d> {};
-struct rule_u : error_handler<rule_u> {};
+struct rule_d : error_handler {};
+struct rule_u : error_handler {};
 
-constexpr auto double_named = x3::rule<rule_d>{"double"} = x3::real_parser<double>{};
-constexpr auto unsigned_named = x3::rule<rule_u>{"unsigned"} = x3::int_parser<unsigned>{};
+constexpr x3::rule<rule_d, double> double_named = {"double"}; 
+constexpr x3::rule<rule_u, unsigned> unsigned_named = {"unsigned"};
+
+constexpr auto double_named_def = x3::real_parser<double>{};
+constexpr auto unsigned_named_def = x3::int_parser<unsigned>{};
+
+BOOST_SPIRIT_DEFINE(double_named, unsigned_named);
 
 struct edge_class;
-struct circuit_class;
 
-x3::rule<edge_class, circuit_parser::graph::edge> const edge = "edge";
-x3::rule<circuit_class, std::pair<circuits::resistor_network, std::vector<circuit_parser::graph::edge>>> const circuit =
-    "circuit";
-
-auto circuit_edge_action = [](auto &&ctx) {
-  auto attr = x3::_attr(ctx);
-  x3::_val(ctx).first.insert(attr.first, attr.second, attr.res, attr.emf.value_or(0.0));
-  x3::_val(ctx).second.push_back(circuit_parser::graph::edge{attr.first, attr.second, attr.res, attr.emf});
-};
+constexpr x3::rule<edge_class, circuit_parser::graph::network_edge> const edge = "edge";
 
 const auto edge_def = unsigned_named > '-' > '-' > unsigned_named > ',' > double_named > ';' >> -(double_named >> 'V');
-const auto circuit_def = +(edge[circuit_edge_action]);
 
-BOOST_SPIRIT_DEFINE(edge, circuit);
+BOOST_SPIRIT_DEFINE(edge);
 
-struct edge_class : x3::annotate_on_success {};
-struct circuit_class : x3::annotate_on_success, error_handler<circuit_class> {};
+struct edge_class : x3::annotate_on_success, error_handler{};
 
-std::optional<std::pair<circuits::resistor_network, std::vector<circuit_parser::graph::edge>>> parse_circuit() {
-  std::pair<circuits::resistor_network, std::vector<circuit_parser::graph::edge>> parse_result;
+std::optional<std::pair<circuits::resistor_network, std::vector<circuit_parser::graph::network_edge>>> parse_circuit() {
+  std::vector<circuit_parser::graph::network_edge> parse_result;
 
   using ascii::space;
 
@@ -116,21 +104,38 @@ std::optional<std::pair<circuits::resistor_network, std::vector<circuit_parser::
   using error_handler_type = x3::error_handler<iter_type>;
   error_handler_type error_handler{input.begin(), input.end(), std::cerr};
 
-  const auto parser = with<x3::error_handler_tag>(std::ref(error_handler))[circuit];
+  const auto parser = with<x3::error_handler_tag>(std::ref(error_handler))[+edge];
   bool       res = phrase_parse(input.begin(), input.end(), parser, space, parse_result);
 
   if (!res) return std::nullopt;
 
-  // for (const auto &v : result) {
-  //   network.insert(v.first, v.second, v.res, v.emf.value_or(0.0));
-  // }
+  circuits::resistor_network network;
 
-  return parse_result;
+  for (const auto &v : parse_result) {
+    network.insert(v.first, v.second, v.res, v.emf.value_or(0.0));
+  }
+
+  return std::make_pair(std::move(network), std::move(parse_result));
 }
 
 } // namespace circuit_parser
 
 int main(int argc, char *argv[]) {
+  bool non_verbose = false, pot_verbose = false;
+
+  po::options_description desc("Available options");
+  desc.add_options()("help,h", "Print this help message")("nonverbose,n", "Non-verbose output")("potentials,p",
+                                                                                         "Print vertex potentials");
+  po::variables_map vm;
+  po::store(po::command_line_parser(argc, argv).options(desc).run(), vm);
+  po::notify(vm);
+
+  non_verbose = vm.count("nonverbose");
+  if (vm.count("potentials")) {
+    pot_verbose = true;
+    non_verbose = false;
+  }
+
   auto parsed = circuit_parser::parse_circuit();
 
   if (!parsed) {
@@ -141,13 +146,17 @@ int main(int argc, char *argv[]) {
   auto [network, result] = parsed.value();
   auto [potentials, currents] = network.solve();
 
-#if 0
-  for (const auto &v : potentials) {
-    std::cout << v.first << ": " << v.second << " V\n";
-  }
-#endif
-
   for (const auto &v : result) {
-    std::cout << v.first << " -- " << v.second << ": " << currents[v.first][v.second] << " A\n";
+    if (!non_verbose) {
+      std::cout << v.first << " -- " << v.second << ": " << currents[v.first][v.second] << " A\n";
+    } else {
+      std::cout << currents[v.first][v.second] << "\n";
+    }
+  }
+
+  if (pot_verbose) {
+    for (const auto &v : result) {
+      std::cout << v.first << " -- " << potentials[v.first] << " V\n";
+    }
   }
 }

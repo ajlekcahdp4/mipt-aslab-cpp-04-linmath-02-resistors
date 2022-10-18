@@ -22,6 +22,7 @@
 #include <range/v3/algorithm.hpp>
 
 #include <scn/scn.h>
+
 namespace po = boost::program_options;
 
 bool contain_same(std::string name_a, std::string name_b) {
@@ -38,10 +39,10 @@ bool contain_same(std::string name_a, std::string name_b) {
     return false;
   }
 
-  std::vector<double> vec_a;
+  std::vector<double> vec_a, vec_b;
   scn::scan_list(file_a, vec_a);
-  std::vector<double> vec_b;
   scn::scan_list(file_b, vec_b);
+  
   return ranges::equal(vec_a, vec_b,
                        [](auto &first, auto &second) { return throttle::is_roughly_equal(first, second); });
 }

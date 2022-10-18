@@ -12,11 +12,7 @@ for file in ${current_folder}/${base_folder}/*.dat; do
     echo -n "Testing ${green}${file}${reset} ... "
 
     # Check if an argument to executable location has been passed to the program
-    if [ -z "$1" ]; then
-        bin/determinant < $file > ${current_folder}/$base_folder/temp.tmp
-    else
-        $1 < $file > ${current_folder}/$base_folder/temp.tmp
-    fi
+    $1 --nonverbose < $file > ${current_folder}/$base_folder/temp.tmp
 
     # Compare inputs
     if $3 ${file}.ans ${current_folder}/${base_folder}/temp.tmp; then
