@@ -70,10 +70,10 @@ endif()
 
 include(FetchContent)
 
-set(BOOST_INCLUDE_LIBRARIES program_options)
+set(BOOST_INCLUDE_LIBRARIES program_options container)
 set(BOOST_ENABLE_CMAKE ON)
 
-find_package(Boost COMPONENTS program_options)
+find_package(Boost COMPONENTS program_options container)
 
 if (NOT Boost_FOUND)
   FetchContent_Declare(
