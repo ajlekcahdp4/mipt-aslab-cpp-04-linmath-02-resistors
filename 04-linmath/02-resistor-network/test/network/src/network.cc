@@ -16,6 +16,7 @@
 #include <scn/scn.h>
 #include <string>
 
+#include <boost/fusion/adapted/std_pair.hpp>
 #include <boost/fusion/adapted/std_tuple.hpp>
 #include <boost/fusion/adapted/struct/adapt_struct.hpp>
 #include <boost/fusion/include/adapt_struct.hpp>
@@ -42,16 +43,28 @@ namespace ascii = x3::ascii;
 
 namespace circuit_parser {
 
-constexpr auto uint_ = x3::int_parser<unsigned>{};
-using x3::double_;
-
 namespace graph {
 struct edge : x3::position_tagged {
   unsigned                first, second;
   double                  res;
   boost::optional<double> emf;
+
+  edge() = default;
+  edge(unsigned p_first, unsigned p_second, double p_res, boost::optional<double> p_emf)
+      : first{p_first}, second{p_second}, res{p_res}, emf{p_emf} {}
 };
+
 } // namespace graph
+
+template <typename rule>
+struct error_handler {
+  x3::error_handler_result on_error(auto &, auto const &, auto const &x, auto const &context) {
+    auto       &error_handler = x3::get<x3::error_handler_tag>(context).get();
+    std::string message = "Parsing error! Expecting: '" + x.which() + "' here:";
+    error_handler(x.where(), message);
+    return x3::error_handler_result::fail;
+  }
+};
 
 } // namespace circuit_parser
 
@@ -60,27 +73,35 @@ BOOST_FUSION_ADAPT_STRUCT(circuit_parser::graph::edge, (unsigned, first), (unsig
 
 namespace circuit_parser {
 
+struct rule_d : error_handler<rule_d> {};
+struct rule_u : error_handler<rule_u> {};
+
+constexpr auto double_named = x3::rule<rule_d>{"double"} = x3::real_parser<double>{};
+constexpr auto unsigned_named = x3::rule<rule_u>{"unsigned"} = x3::int_parser<unsigned>{};
+
 struct edge_class;
+struct circuit_class;
+
 x3::rule<edge_class, circuit_parser::graph::edge> const edge = "edge";
-const auto edge_def = uint_ > '-' > '-' > uint_ > ',' > double_ > ';' >> -(double_ >> 'V');
+x3::rule<circuit_class, std::pair<circuits::resistor_network, std::vector<circuit_parser::graph::edge>>> const circuit =
+    "circuit";
 
-BOOST_SPIRIT_DEFINE(edge);
-
-struct error_handler {
-  x3::error_handler_result on_error(auto &first, auto const &last, auto const &x, auto const &context) {
-    auto       &error_handler = x3::get<x3::error_handler_tag>(context).get();
-    std::string message = "Error! Expecting: " + x.which() + " here:";
-    error_handler(x.where(), message);
-    return x3::error_handler_result::fail;
-  }
+auto circuit_edge_action = [](auto &&ctx) {
+  auto attr = x3::_attr(ctx);
+  x3::_val(ctx).first.insert(attr.first, attr.second, attr.res, attr.emf.value_or(0.0));
+  x3::_val(ctx).second.push_back(circuit_parser::graph::edge{attr.first, attr.second, attr.res, attr.emf});
 };
 
-struct edge_class : x3::annotate_on_success, error_handler {};
+const auto edge_def = unsigned_named > '-' > '-' > unsigned_named > ',' > double_named > ';' >> -(double_named >> 'V');
+const auto circuit_def = +(edge[circuit_edge_action]);
 
-std::optional<std::pair<circuits::resistor_network, std::vector<circuit_parser::graph::edge>>>
-parse_circuit() {
-  circuits::resistor_network     network;
-  std::vector<circuit_parser::graph::edge> result;
+BOOST_SPIRIT_DEFINE(edge, circuit);
+
+struct edge_class : x3::annotate_on_success {};
+struct circuit_class : x3::annotate_on_success, error_handler<circuit_class> {};
+
+std::optional<std::pair<circuits::resistor_network, std::vector<circuit_parser::graph::edge>>> parse_circuit() {
+  std::pair<circuits::resistor_network, std::vector<circuit_parser::graph::edge>> parse_result;
 
   using ascii::space;
 
@@ -95,17 +116,16 @@ parse_circuit() {
   using error_handler_type = x3::error_handler<iter_type>;
   error_handler_type error_handler{input.begin(), input.end(), std::cerr};
 
-  const auto edges = +edge;
-  const auto parser = with<x3::error_handler_tag>(std::ref(error_handler))[edges];
+  const auto parser = with<x3::error_handler_tag>(std::ref(error_handler))[circuit];
+  bool       res = phrase_parse(input.begin(), input.end(), parser, space, parse_result);
 
-  bool res = phrase_parse(input.begin(), input.end(), parser, space, result);
   if (!res) return std::nullopt;
 
-  for (const auto &v : result) {
-    network.insert(v.first, v.second, v.res, v.emf.value_or(0.0));
-  }
+  // for (const auto &v : result) {
+  //   network.insert(v.first, v.second, v.res, v.emf.value_or(0.0));
+  // }
 
-  return {std::make_pair(network, result)};
+  return parse_result;
 }
 
 } // namespace circuit_parser
