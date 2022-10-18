@@ -1,5 +1,6 @@
 #include "resistor_network.hpp"
 #include "contiguous_matrix.hpp"
+#include "disjoint_map_forest.hpp"
 #include "equal.hpp"
 #include "matrix.hpp"
 
@@ -11,20 +12,43 @@
 #include <iterator>
 #include <utility>
 
+#include <unordered_map>
+#include <unordered_set>
+
 #include <boost/functional/hash.hpp>
+
 namespace circuits {
 
 void connected_resistor_network::insert(unsigned first, unsigned second, double resistance, double emf) {
   if (first == second) throw std::invalid_argument("Circuit graph can't have loops");
+
+  auto found = m_map.find(first);
+  if (found != m_map.end() && found->second.find(second) != found->second.end()) {
+    throw std::invalid_argument("Edge is already present in the graph");
+  }
 
   if (first > second) {
     std::swap(first, second);
     emf = -emf;
   }
 
+  m_map[first].insert({second, std::make_pair(resistance, emf)});
+  m_map[second].insert({first, std::make_pair(resistance, -emf)});
+
+  if (throttle::is_roughly_equal(resistance, 0.0)) m_short_circuits.push_back({first, second, emf});
+}
+
+void connected_resistor_network::try_insert(unsigned first, unsigned second, double resistance, double emf) {
+  if (first == second) throw std::invalid_argument("Circuit graph can't have loops");
+
   auto found = m_map.find(first);
   if (found != m_map.end() && found->second.find(second) != found->second.end()) {
-    throw std::invalid_argument("Edge is already present in the graph");
+    return;
+  }
+
+  if (first > second) {
+    std::swap(first, second);
+    emf = -emf;
   }
 
   m_map[first].insert({second, std::make_pair(resistance, emf)});
@@ -148,6 +172,74 @@ connected_resistor_network::solution connected_resistor_network::solve() const {
   }
 
   return {result_potentials, result_currents};
+}
+
+void resistor_network::insert(unsigned first, unsigned second, double resistance, double emf) {
+  if (first == second) throw std::invalid_argument("Circuit graph can't have loops");
+
+  if (first > second) {
+    std::swap(first, second);
+    emf = -emf;
+  }
+
+  auto found = m_map.find(first);
+  if (found != m_map.end() && found->second.find(second) != found->second.end()) {
+    throw std::invalid_argument("Edge is already present in the graph");
+  }
+
+  m_map[first].insert({second, std::make_pair(resistance, emf)});
+  m_map[second].insert({first, std::make_pair(resistance, -emf)});
+}
+
+std::vector<connected_resistor_network> resistor_network::connected_components() const {
+  throttle::disjoint_map_forest<unsigned, unsigned> dsu;
+
+  for (const auto &v : m_map) {
+    dsu.make_set(v.first, v.first);
+  }
+
+  for (const auto &v : m_map) {
+    for (const auto &p : v.second) {
+      // Here we do double work because each edge is visited twice, but this part isn't perfomance critical.
+      dsu.union_set(v.first, p.first);
+    }
+  }
+
+  std::unordered_map<unsigned, connected_resistor_network> connected_representatives;
+  // FindSet does not change the component representaive. Here we iterate over all the nodes and find their
+  // representaive to find all connected components.
+  for (const auto &v : m_map) {
+    auto found = dsu.find_set(v.first);
+    if (connected_representatives.contains(*found)) continue;
+    connected_representatives.insert({*found, connected_resistor_network{}});
+  }
+
+  for (const auto &v : m_map) {
+    for (const auto &p : v.second) {
+      auto found = dsu.find_set(v.first);
+      connected_representatives[*found].try_insert(v.first, p.first, p.second.first, p.second.second);
+    }
+  }
+
+  std::vector<connected_resistor_network> result;
+  for (const auto &v : connected_representatives) {
+    result.push_back(std::move(v.second));
+  }
+
+  return result;
+}
+
+resistor_network::solution resistor_network::solve() const {
+  auto     components = connected_components();
+  solution result;
+
+  for (const auto &comp: components) {
+    auto individual_sol = comp.solve();
+    result.first.merge(individual_sol.first);
+    result.second.merge(individual_sol.second);
+  }
+
+  return result;
 }
 
 } // namespace circuits
