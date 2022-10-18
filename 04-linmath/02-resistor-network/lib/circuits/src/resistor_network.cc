@@ -11,10 +11,16 @@
 #include <iterator>
 #include <utility>
 
+#include <boost/functional/hash.hpp>
 namespace circuits {
 
-void resistor_network::insert(unsigned int first, unsigned int second, double resistance, double emf) {
+void resistor_network::insert(unsigned first, unsigned second, double resistance, double emf) {
   if (first == second) throw std::invalid_argument("Circuit graph can't have loops");
+
+  if (first > second) {
+    std::swap(first, second);
+    emf = -emf;
+  }
 
   auto found = m_map.find(first);
   if (found != m_map.end() && found->second.find(second) != found->second.end()) {
@@ -23,13 +29,19 @@ void resistor_network::insert(unsigned int first, unsigned int second, double re
 
   m_map[first].insert({second, std::make_pair(resistance, emf)});
   m_map[second].insert({first, std::make_pair(resistance, -emf)});
+
+  if (throttle::is_roughly_equal(resistance, 0.0)) m_short_circuits.push_back({first, second, emf});
 }
 
-std::unordered_map<unsigned, double> resistor_network::solve() const {
+std::pair<std::unordered_map<unsigned, double>, std::unordered_map<unsigned, std::unordered_map<unsigned, double>>>
+resistor_network::solve() const {
   if (m_map.empty()) throw std::invalid_argument{"Network can't be empty"};
 
   std::unordered_map<unsigned, decltype(m_map)::const_iterator> iterator_map;
-  std::unordered_map<unsigned, unsigned> index_map;
+  std::unordered_map<unsigned, unsigned>                        index_map;
+  std::unordered_map<std::pair<unsigned, unsigned>, unsigned, boost::hash<std::pair<unsigned, unsigned>>>
+                                                              short_circuit_current_map;
+  std::unordered_map<unsigned, std::pair<unsigned, unsigned>> current_variable_pair_map;
 
   unsigned j = 0;
   for (auto start = std::next(m_map.begin()), end = m_map.end(); start != end; ++start, ++j) {
@@ -37,9 +49,16 @@ std::unordered_map<unsigned, double> resistor_network::solve() const {
     index_map[start->first] = j;
   }
 
-  auto size = iterator_map.size();
+  const auto size = iterator_map.size();
+  const auto num_short_circuits = m_short_circuits.size();
 
-  throttle::linmath::contiguous_matrix<double> extended_matrix{size, size + 1};
+  for (j = size; const auto &v : m_short_circuits) {
+    short_circuit_current_map.insert({{v.first, v.second}, j});
+    current_variable_pair_map[j++] = {v.first, v.second};
+  }
+
+  throttle::linmath::contiguous_matrix<double> extended_matrix{size + num_short_circuits,
+                                                               size + num_short_circuits + 1};
 
   for (const auto &v : iterator_map) {
     const auto &[index, map_iter] = v;
@@ -48,25 +67,82 @@ std::unordered_map<unsigned, double> resistor_network::solve() const {
     for (const auto &a : map_iter->second) {
       auto [res, emf] = a.second;
 
+      if (throttle::is_roughly_equal(res, 0.0)) {
+        const auto initial_index = iterator_map[index]->first;
+        const auto current_var =
+            short_circuit_current_map.at((initial_index > a.first) ? std::make_pair(a.first, initial_index)
+                                                                   : std::make_pair(initial_index, a.first));
+        row[current_var] = (initial_index > a.first ? -1.0 : 1.0);
+        continue;
+      }
+
       row[index] += 1.0 / res;
       if (a.first != m_map.begin()->first) {
-        auto corrensponding_index = index_map[a.first];
+        auto corrensponding_index = index_map.at(a.first);
         row[corrensponding_index] -= 1.0 / res;
       }
-      
-      row[size] -= emf / res;
+
+      row[size + num_short_circuits] -= emf / res;
     }
   }
-  
-  auto potentials = throttle::nonsingular_solver(std::move(extended_matrix));
-  auto result = std::unordered_map<unsigned, double>{};
 
-  result[m_map.begin()->first] = 0.0;
-  for (unsigned i = 0; i < size; ++i) {
-    result[iterator_map[i]->first] = potentials[i][0];
+  for (unsigned i = size; const auto &v : m_short_circuits) {
+    auto row = extended_matrix[i++];
+
+    if (v.first != m_map.begin()->first) {
+      auto first = index_map.at(v.first);
+      row[first] = 1.0;
+    }
+
+    if (v.second != m_map.begin()->first) {
+      auto second = index_map.at(v.second);
+      row[second] = -1.0;
+    }
+
+    row[size + num_short_circuits] = -v.emf;
   }
 
-  return result;
+#if 0
+  for (unsigned i = 0; i < extended_matrix.rows(); ++i) {
+    for (const auto &v : extended_matrix[i]) {
+      std::cout << v << "\t";
+    }
+    std::cout << "\n";
+  }
+#endif
+
+  auto unknowns = throttle::nonsingular_solver(std::move(extended_matrix));
+  auto result_potentials = std::unordered_map<unsigned, double>{};
+
+#if 0
+  for (unsigned i = 0; i < unknowns.rows(); ++i) {
+    for (const auto &v : unknowns[i]) {
+      std::cout << v << "\t";
+    }
+    std::cout << "\n";
+  }
+#endif
+
+  result_potentials[m_map.begin()->first] = 0.0;
+  for (unsigned i = 0; i < size; ++i) {
+    result_potentials[iterator_map[i]->first] = unknowns[i][0];
+  }
+
+  auto result_currents = std::unordered_map<unsigned, std::unordered_map<unsigned, double>>{};
+  for (const auto &v : short_circuit_current_map) {
+    result_currents[v.first.first][v.first.second] = unknowns[v.second][0];
+    result_currents[v.first.second][v.first.first] = -unknowns[v.second][0];
+  }
+
+  for (const auto &v : m_map) {
+    for (const auto &c : v.second) {
+      if (throttle::is_roughly_equal(c.second.first, 0.0)) continue;
+      result_currents[v.first][c.first] =
+          (result_potentials[v.first] - result_potentials[c.first] + c.second.second) / c.second.first;
+    }
+  }
+
+  return {result_potentials, result_currents};
 }
 
 } // namespace circuits

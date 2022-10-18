@@ -117,10 +117,15 @@ int main(int argc, char *argv[]) {
   }
 
   auto [network, result] = parsed.value();
-  auto potentials = network.solve();
+  auto [potentials, currents] = network.solve();
+
+#if 0
+  for (const auto &v : potentials) {
+    std::cout << v.first << ": " << v.second << " V\n";
+  }
+#endif 
 
   for (const auto &v : result) {
-    std::cout << v.first << " -- " << v.second << ": "
-              << (potentials[v.first] - potentials[v.second] + v.emf.value_or(0.0)) / v.res << " A\n";
+    std::cout << v.first << " -- " << v.second << ": " << currents[v.first][v.second] << " A\n";
   }
 }
