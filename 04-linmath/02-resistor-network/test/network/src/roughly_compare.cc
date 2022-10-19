@@ -42,9 +42,9 @@ bool contain_same(std::string name_a, std::string name_b) {
   std::vector<double> vec_a, vec_b;
   scn::scan_list(file_a, vec_a);
   scn::scan_list(file_b, vec_b);
-  
+
   return ranges::equal(vec_a, vec_b,
-                       [](auto &first, auto &second) { return throttle::is_roughly_equal(first, second); });
+                       [](auto &first, auto &second) { return throttle::is_roughly_equal(first, second, 1e-3); });
 }
 
 int main(int argc, char *argv[]) {
