@@ -70,23 +70,7 @@ endif()
 
 include(FetchContent)
 
-set(BOOST_INCLUDE_LIBRARIES program_options container)
-set(BOOST_ENABLE_CMAKE ON)
-
-find_package(Boost COMPONENTS program_options container)
-
-if (NOT Boost_FOUND)
-  FetchContent_Declare(
-    Boost
-    GIT_REPOSITORY https://github.com/boostorg/boost.git
-    GIT_TAG master
-  )
-  
-  if (NOT Boost_POPULATED)
-    FetchContent_Populate(Boost)
-    add_subdirectory(${Boost_SOURCE_DIR} ${Boost_BINARY_DIR} EXCLUDE_FROM_ALL)
-  endif()
-endif()
+find_package(Boost REQUIRED COMPONENTS program_options container)
 
 add_subdirectory(lib)
 add_subdirectory(test)

@@ -22,7 +22,6 @@ set(COMP_SOURCES
   src/roughly_compare.cc
 )
 
-
 add_executable(comp ${COMP_SOURCES})
 target_link_libraries(comp PRIVATE throttle Boost::program_options)
 target_link_libraries(comp PRIVATE scn)

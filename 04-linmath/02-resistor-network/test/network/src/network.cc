@@ -130,6 +130,11 @@ int main(int argc, char *argv[]) {
   po::store(po::command_line_parser(argc, argv).options(desc).run(), vm);
   po::notify(vm);
 
+  if (vm.count("help")) {
+    std::cout << desc << "\n";
+    return 1;
+  }
+
   non_verbose = vm.count("nonverbose");
   if (vm.count("potentials")) {
     pot_verbose = true;
@@ -155,8 +160,8 @@ int main(int argc, char *argv[]) {
   }
 
   if (pot_verbose) {
-    for (const auto &v : result) {
-      std::cout << v.first << " -- " << potentials[v.first] << " V\n";
+    for (const auto &v : network.graph()) {
+      std::cout << v.first << " : " << potentials[v.first] << " V\n";
     }
   }
 }

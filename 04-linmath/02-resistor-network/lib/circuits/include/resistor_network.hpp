@@ -6,8 +6,8 @@
 #include <utility>
 #include <vector>
 
-#include <unordered_set>
 #include <unordered_map>
+#include <unordered_set>
 
 #pragma once
 
@@ -37,11 +37,17 @@ public:
 };
 
 class resistor_network {
+public:
   using resistance_emf_pair = std::pair<double, double>;
+  using map_type = std::unordered_map<unsigned, std::unordered_map<unsigned, resistance_emf_pair>>;
+
+private:
   std::unordered_map<unsigned, std::unordered_map<unsigned, resistance_emf_pair>> m_map;
 
 public:
   std::vector<connected_resistor_network> connected_components() const;
+  const map_type                         &graph() const { return m_map; }
+
   void insert(unsigned first, unsigned second, double resistance, double emf);
 
   using solution_potentials = std::unordered_map<unsigned, double>;
