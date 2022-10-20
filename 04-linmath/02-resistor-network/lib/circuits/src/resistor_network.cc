@@ -1,6 +1,7 @@
 #include "resistor_network.hpp"
+
 #include "contiguous_matrix.hpp"
-#include "disjoint_map_forest.hpp"
+#include "disjoint_set_forest.hpp"
 #include "equal.hpp"
 #include "matrix.hpp"
 
@@ -174,10 +175,10 @@ void resistor_network::insert(unsigned first, unsigned second, double resistance
 }
 
 std::vector<connected_resistor_network> resistor_network::connected_components() const {
-  throttle::disjoint_map_forest<unsigned, unsigned> dsu;
+  throttle::disjoint_set_forest<unsigned> dsu;
 
   for (const auto &v : m_map) {
-    dsu.make_set(v.first, v.first);
+    dsu.make_set(v.first);
   }
 
   for (const auto &v : m_map) {
@@ -191,15 +192,15 @@ std::vector<connected_resistor_network> resistor_network::connected_components()
   // FindSet does not change the component representaive. Here we iterate over all the nodes and find their
   // representaive to find all connected components.
   for (const auto &v : m_map) {
-    auto found = dsu.find_set(v.first);
-    if (connected_representatives.contains(*found)) continue;
-    connected_representatives.insert({*found, connected_resistor_network{}});
+    const auto& found = dsu.find_set(v.first);
+    if (connected_representatives.contains(found)) continue;
+    connected_representatives.insert({found, connected_resistor_network{}});
   }
 
   for (const auto &v : m_map) {
     for (const auto &p : v.second) {
-      auto found = dsu.find_set(v.first);
-      connected_representatives[*found].try_insert(v.first, p.first, p.second.first, p.second.second);
+      const auto& found = dsu.find_set(v.first);
+      connected_representatives[found].try_insert(v.first, p.first, p.second.first, p.second.second);
     }
   }
 
@@ -215,7 +216,7 @@ resistor_network::solution resistor_network::solve() const {
   auto     components = connected_components();
   solution result;
 
-  for (const auto &comp: components) {
+  for (const auto &comp : components) {
     auto individual_sol = comp.solve();
     result.first.merge(individual_sol.first);
     result.second.merge(individual_sol.second);

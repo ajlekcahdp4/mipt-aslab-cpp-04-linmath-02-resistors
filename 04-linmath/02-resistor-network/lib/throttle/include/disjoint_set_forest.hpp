@@ -28,21 +28,24 @@
 namespace throttle {
 
 namespace detail {
-struct disjoint_set_forest_node {
+template <typename t_key_type> struct disjoint_set_forest_node {
   using size_type = unsigned;
   size_type m_parent_index;
-  size_type m_rank;
+  size_type m_rank = 0;
+  
+  t_key_type m_key;
 
-  disjoint_set_forest_node(size_type p_parent_index) : m_parent_index{p_parent_index}, m_rank{0} {}
+  disjoint_set_forest_node(size_type p_parent_index, const t_key_type& p_key) : m_parent_index{p_parent_index}, m_key{p_key} {}
 };
+
 } // namespace detail
 
 template <typename t_key_type, typename t_eq = std::equal_to<t_key_type>, typename t_hash = std::hash<t_key_type>>
 class disjoint_set_forest final {
-  using node_type = detail::disjoint_set_forest_node;
+  using node_type = detail::disjoint_set_forest_node<t_key_type>;
 
 public:
-  using size_type = node_type::size_type;
+  using size_type = typename node_type::size_type;
   using key_type = t_key_type;
 
 private:
@@ -53,16 +56,10 @@ private:
 public:
   disjoint_set_forest() = default;
 
-  class individual_set_proxy {
-    friend class disjoint_set_forest;
-    size_type m_curr_index;
-    individual_set_proxy(size_type m_node) : m_curr_index{m_node} {}
-  };
-
   void make_set(const key_type &p_key) {
     size_type index = m_node_vec.size();
     bool inserted = m_key_index_map.emplace(std::make_pair(p_key, index)).second;
-    if (inserted) m_node_vec.emplace_back(index);
+    if (inserted) m_node_vec.emplace_back(index, p_key);
   }
 
 private:
@@ -75,7 +72,7 @@ private:
   }
 
   size_type find_set_impl(size_type p_node) {
-#ifndef RECURSIVE_FIND_SET
+#if 0
     size_type &parent = parent_index(p_node);
 
     while (parent != p_node) {
@@ -109,8 +106,8 @@ private:
   }
 
 public:
-  individual_set_proxy find_set(const key_type &p_key) {
-    return individual_set_proxy{find_set_impl(m_key_index_map.at(p_key))};
+  const key_type &find_set(const key_type &p_key) {
+    return at_index(find_set_impl(m_key_index_map.at(p_key))).m_key;
   }
 
   void union_set(const key_type &p_left, const key_type &p_right) {
