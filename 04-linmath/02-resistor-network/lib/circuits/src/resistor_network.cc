@@ -127,26 +127,8 @@ connected_resistor_network::solution connected_resistor_network::solve() const {
     row[size + num_short_circuits] = -v.emf;
   }
 
-#if 0
-  for (unsigned i = 0; i < extended_matrix.rows(); ++i) {
-    for (const auto &v : extended_matrix[i]) {
-      std::cout << v << "\t";
-    }
-    std::cout << "\n";
-  }
-#endif
-
   // Solve the linear system of equations to find unkown potentials and currents.
   auto unknowns = throttle::nonsingular_solver(std::move(extended_matrix));
-
-#if 0
-  for (unsigned i = 0; i < unknowns.rows(); ++i) {
-    for (const auto &v : unknowns[i]) {
-      std::cout << v << "\t";
-    }
-    std::cout << "\n";
-  }
-#endif
 
   auto result_potentials = solution_potentials{};
   // Fill base node potential with zero.
