@@ -192,14 +192,14 @@ std::vector<connected_resistor_network> resistor_network::connected_components()
   // FindSet does not change the component representaive. Here we iterate over all the nodes and find their
   // representaive to find all connected components.
   for (const auto &v : m_map) {
-    const auto& found = dsu.find_set(v.first);
+    const auto &found = dsu.find_set(v.first);
     if (connected_representatives.contains(found)) continue;
     connected_representatives.insert({found, connected_resistor_network{}});
   }
 
   for (const auto &v : m_map) {
     for (const auto &p : v.second) {
-      const auto& found = dsu.find_set(v.first);
+      const auto &found = dsu.find_set(v.first);
       connected_representatives[found].try_insert(v.first, p.first, p.second.first, p.second.second);
     }
   }
