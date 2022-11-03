@@ -6,6 +6,7 @@
 #include <iterator>
 #include <set>
 #include <string>
+#include <tuple>
 
 #include "contiguous_matrix.hpp"
 #include "matrix.hpp"
@@ -70,7 +71,7 @@ namespace circuit_parser {
 struct rule_d : error_handler {};
 struct rule_u : error_handler {};
 
-constexpr x3::rule<rule_d, double> double_named = {"double"}; 
+constexpr x3::rule<rule_d, double>   double_named = {"double"};
 constexpr x3::rule<rule_u, unsigned> unsigned_named = {"unsigned"};
 
 constexpr auto double_named_def = x3::real_parser<double>{};
@@ -86,9 +87,9 @@ const auto edge_def = unsigned_named > '-' > '-' > unsigned_named > ',' > double
 
 BOOST_SPIRIT_DEFINE(edge);
 
-struct edge_class : x3::annotate_on_success, error_handler{};
+struct edge_class : x3::annotate_on_success, error_handler {};
 
-std::optional<std::pair<circuits::resistor_network, std::vector<circuit_parser::graph::network_edge>>> parse_circuit() {
+std::optional<std::vector<circuit_parser::graph::network_edge>> parse_circuit() {
   std::vector<circuit_parser::graph::network_edge> parse_result;
 
   using ascii::space;
@@ -109,23 +110,16 @@ std::optional<std::pair<circuits::resistor_network, std::vector<circuit_parser::
 
   if (!res) return std::nullopt;
 
-  circuits::resistor_network network;
-
-  for (const auto &v : parse_result) {
-    network.insert(v.first, v.second, v.res, v.emf.value_or(0.0));
-  }
-
-  return std::make_pair(std::move(network), std::move(parse_result));
+  return parse_result;
 }
 
 } // namespace circuit_parser
 
 int main(int argc, char *argv[]) {
-  bool non_verbose = false, pot_verbose = false;
+  bool non_verbose = false;
 
   po::options_description desc("Available options");
-  desc.add_options()("help,h", "Print this help message")("nonverbose,n", "Non-verbose output")("potentials,p",
-                                                                                         "Print vertex potentials");
+  desc.add_options()("help,h", "Print this help message")("nonverbose,n", "Non-verbose output");
   po::variables_map vm;
   po::store(po::command_line_parser(argc, argv).options(desc).run(), vm);
   po::notify(vm);
@@ -136,11 +130,6 @@ int main(int argc, char *argv[]) {
   }
 
   non_verbose = vm.count("nonverbose");
-  if (vm.count("potentials")) {
-    pot_verbose = true;
-    non_verbose = false;
-  }
-
   auto parsed = circuit_parser::parse_circuit();
 
   if (!parsed) {
@@ -148,20 +137,45 @@ int main(int argc, char *argv[]) {
     return EXIT_FAILURE;
   }
 
-  auto [network, result] = parsed.value();
-  auto [potentials, currents] = network.solve();
+  auto                       result = parsed.value();
+  circuits::resistor_network network;
+
+  std::unordered_map<unsigned, unsigned> input_vertex_to_mapped;
+  std::unordered_map<unsigned, unsigned> mapped_to_input_vertex;
+
+  unsigned count = 0;
+
+  const auto get_or_insert = [&count, &input_vertex_to_mapped, &mapped_to_input_vertex](unsigned index) {
+    if (input_vertex_to_mapped.contains(index)) {
+      return input_vertex_to_mapped.at(index);
+    }
+
+    auto this_index = count++;
+    input_vertex_to_mapped[index] = this_index;
+    mapped_to_input_vertex[this_index] = index;
+
+    return this_index;
+  };
+
+  std::vector<std::tuple<unsigned, unsigned, unsigned, unsigned>> currents_to_print;
 
   for (const auto &v : result) {
-    if (!non_verbose) {
-      std::cout << v.first << " -- " << v.second << ": " << currents[v.first][v.second] << " A\n";
-    } else {
-      std::cout << currents[v.first][v.second] << "\n";
-    }
+    auto first_mapped = get_or_insert(v.first), second_mapped = get_or_insert(v.second);
+    auto temporary_first = count++, temporary_second = count++;
+    network.insert(first_mapped, temporary_first);
+    network.insert(temporary_first, temporary_second, v.res, v.emf.value_or(0.0));
+    network.insert(temporary_second, second_mapped);
+    currents_to_print.push_back(std::make_tuple(temporary_first, temporary_second, v.first, v.second));
   }
 
-  if (pot_verbose) {
-    for (const auto &v : network.graph()) {
-      std::cout << v.first << " : " << potentials[v.first] << " V\n";
+  auto [potentials, currents] = network.solve();
+
+  for (const auto &v : currents_to_print) {
+    auto [temp_1, temp_2, name_1, name_2] = v;
+    if (!non_verbose) {
+      std::cout << name_1 << " -- " << name_2 << ": " << currents[temp_1][temp_2] << " A\n";
+    } else {
+      std::cout << currents[temp_1][temp_2] << "\n";
     }
   }
 }

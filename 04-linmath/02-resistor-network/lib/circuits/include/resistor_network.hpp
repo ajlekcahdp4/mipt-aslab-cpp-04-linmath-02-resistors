@@ -48,7 +48,7 @@ public:
   std::vector<connected_resistor_network> connected_components() const;
   const map_type                         &graph() const { return m_map; }
 
-  void insert(unsigned first, unsigned second, double resistance, double emf);
+  void insert(unsigned first, unsigned second, double resistance = 0, double emf = 0);
 
   using solution_potentials = std::unordered_map<unsigned, double>;
   using solution_currents = std::unordered_map<unsigned, std::unordered_map<unsigned, double>>;
