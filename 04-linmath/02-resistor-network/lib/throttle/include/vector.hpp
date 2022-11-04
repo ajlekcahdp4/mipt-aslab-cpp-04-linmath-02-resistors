@@ -22,8 +22,6 @@
 #include <stdexcept>
 #include <type_traits>
 
-#include <range/v3/all.hpp>
-
 #include "utility.hpp"
 
 namespace throttle {
@@ -73,7 +71,11 @@ public:
   vector(size_type count, const value_type &value = value_type{}) requires std::copyable<value_type> {
     vector temp{};
     temp.reserve(count);
-    ranges::copy(ranges::views::repeat_n(value, count), ranges::back_inserter(temp));
+
+    for (size_type i = 0; i < count; ++i) {
+      temp.push_back(value);
+    }
+
     *this = std::move(temp);
   }
 

@@ -68,8 +68,6 @@ if (SANITIZE)
   add_link_options(-fsanitize=address -fno-omit-frame-pointer)
 endif()
 
-include(FetchContent)
-
 find_package(Boost REQUIRED COMPONENTS program_options)
 
 add_subdirectory(lib)
