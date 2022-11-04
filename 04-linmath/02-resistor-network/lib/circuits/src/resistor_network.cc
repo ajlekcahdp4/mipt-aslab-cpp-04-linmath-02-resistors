@@ -5,8 +5,6 @@
 #include "equal.hpp"
 #include "matrix.hpp"
 
-#include <range/v3/all.hpp>
-
 #include <stdexcept>
 #include <utility>
 
