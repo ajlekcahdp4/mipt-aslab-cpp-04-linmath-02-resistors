@@ -4,7 +4,6 @@ set(LIB_SOURCES
 
 add_library(throttle ${LIB_SOURCES})
 target_include_directories(throttle PUBLIC include)
-target_link_libraries(throttle PUBLIC range-v3::range-v3)
 
 set(UNIT_TEST_SOURCES
   test/test_vector.cc

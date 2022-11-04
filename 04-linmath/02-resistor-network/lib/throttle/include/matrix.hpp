@@ -22,14 +22,10 @@
 #include <iostream>
 #include <iterator>
 #include <limits>
+#include <numeric>
 #include <optional>
-#include <range/v3/numeric/inner_product.hpp>
 #include <stdexcept>
 #include <utility>
-
-#include <range/v3/action.hpp>
-#include <range/v3/algorithm.hpp>
-#include <range/v3/view.hpp>
 
 namespace throttle {
 namespace linmath {
@@ -56,16 +52,12 @@ public:
 
   void update_rows_vec() {
     m_rows_vec.reserve(rows());
+    auto start = m_contiguous_matrix.data();
 
-    // Just messing around with range-v3. Nothing to see here.
-    // clang-format off
-    ranges::copy(
-        ranges::views::ints(0, ranges::unreachable) 
-        | ranges::views::stride(cols()) 
-        | ranges::views::transform([start = m_contiguous_matrix.data()](auto value) { return start + value; })
-        | ranges::views::take(rows()),
-        std::back_inserter(m_rows_vec)); }
-  // clang-format on
+    for (size_type i = 0; i < rows(); ++i, start += cols()) {
+      m_rows_vec.push_back(start);
+    }
+  }
 
 public:
   matrix(size_type rows, size_type cols, value_type val = value_type{}) : m_contiguous_matrix{rows, cols, val} {
@@ -153,8 +145,8 @@ public:
     for (size_type i = 0; i < m_rows_vec.size(); i++) {
       const auto first_row = (*this)[i];
       const auto second_row = other[i];
-      if (!ranges::equal(first_row, second_row,
-                         [&precision](auto first, auto second) { return is_roughly_equal(first, second, precision); }))
+      if (!std::equal(first_row.begin(), first_row.end(), second_row.begin(),
+                      [&precision](auto first, auto second) { return is_roughly_equal(first, second, precision); }))
         return false;
     }
     return true;
@@ -219,8 +211,8 @@ public:
         auto second_row = mat[i];
 
         auto coef = mat[to_elim_row][i] / pivot_elem;
-        ranges::transform(first_row, second_row, first_row.begin(),
-                          [coef](value_type left, value_type right) { return left - coef * right; });
+        std::transform(first_row.begin(), first_row.end(), second_row.begin(), first_row.begin(),
+                       [coef](value_type left, value_type right) { return left - coef * right; });
       }
     }
 
@@ -286,7 +278,8 @@ public:
     for (size_type i = 0; i < rows(); ++i) {
       auto row_first = (*this)[i];
       auto row_second = other[i];
-      ranges::transform(row_first, row_second, row_first.begin(), std::plus<value_type>{});
+      std::transform(row_first.begin(), row_first.end(), row_second.begin(), row_first.begin(),
+                     std::plus<value_type>{});
     }
     return *this;
   }
@@ -296,7 +289,8 @@ public:
     for (size_type i = 0; i < rows(); ++i) {
       auto row_first = (*this)[i];
       auto row_second = other[i];
-      ranges::transform(row_first, row_second, row_first.begin(), std::minus<value_type>{});
+      std::transform(row_first.begin(), row_first.end(), row_second.begin(), row_first.begin(),
+                     std::minus<value_type>{});
     }
     return *this;
   }
@@ -310,7 +304,7 @@ public:
     for (size_type i = 0; i < rows(); i++) {
       for (size_type j = 0; j < t_rhs.rows(); j++) {
         const auto range_first = (*this)[i], range_second = t_rhs[j];
-        res[i][j] = ranges::inner_product(range_first, range_second, value_type{});
+        res[i][j] = std::inner_product(range_first.begin(), range_first.end(), range_second.begin(), value_type{});
       }
     }
 
