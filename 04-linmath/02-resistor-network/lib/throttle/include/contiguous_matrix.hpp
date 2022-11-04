@@ -19,6 +19,7 @@
 #include <initializer_list>
 #include <iterator>
 #include <memory>
+#include <range/v3/numeric/inner_product.hpp>
 #include <stdexcept>
 
 #include <range/v3/all.hpp>
@@ -209,8 +210,7 @@ public:
     for (size_type i = 0; i < m_rows; i++) {
       for (size_type j = 0; j < t_rhs.m_rows; j++) {
         const auto range_first = (*this)[i], range_second = t_rhs[j];
-        res[i][j] = ranges::accumulate(
-            ranges::views::zip_with(std::multiplies<value_type>{}, range_first, range_second), value_type{});
+        res[i][j] = ranges::inner_product(range_first, range_second, value_type{});
       }
     }
 
