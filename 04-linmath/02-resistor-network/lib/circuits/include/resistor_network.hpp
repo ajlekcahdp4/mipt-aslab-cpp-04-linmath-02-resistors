@@ -15,7 +15,7 @@ namespace circuits {
 
 class connected_resistor_network {
   using resistance_emf_pair = std::pair<double, double>;
-  std::unordered_map<unsigned, std::map<unsigned, resistance_emf_pair>> m_map;
+  std::unordered_map<unsigned, std::unordered_map<unsigned, resistance_emf_pair>> m_map;
 
   struct short_circuit_edge {
     unsigned first;

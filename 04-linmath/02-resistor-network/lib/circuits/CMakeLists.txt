@@ -16,4 +16,4 @@ if (ENABLE_GTEST)
   gtest_discover_tests(unit_test_circuits)
 endif()
 
-target_link_libraries(circuits PUBLIC range-v3::range-v3 throttle)
+target_link_libraries(circuits PUBLIC throttle)

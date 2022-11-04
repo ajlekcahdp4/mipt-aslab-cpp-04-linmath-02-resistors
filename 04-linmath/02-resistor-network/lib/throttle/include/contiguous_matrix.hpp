@@ -15,17 +15,14 @@
 #include "vector.hpp"
 
 #include <algorithm>
+#include <concepts>
 #include <functional>
 #include <initializer_list>
 #include <iterator>
 #include <memory>
-#include <range/v3/numeric/inner_product.hpp>
+#include <numeric>
 #include <stdexcept>
-
-#include <range/v3/all.hpp>
 #include <type_traits>
-
-#include <concepts>
 
 namespace throttle {
 namespace linmath {
@@ -131,9 +128,6 @@ private:
     size_type size() const { return m_past_row - m_row; }
   };
 
-  static_assert(ranges::random_access_range<proxy_row>, "Proxy row is not a random access range");
-  static_assert(ranges::random_access_range<const_proxy_row>, "Const proxy row is not a random access range");
-
 public:
   proxy_row       operator[](size_type index) { return proxy_row{&m_buffer[index * m_cols], m_cols}; }
   const_proxy_row operator[](size_type index) const { return const_proxy_row{&m_buffer[index * m_cols], m_cols}; }
@@ -144,24 +138,25 @@ public:
 
   contiguous_matrix &operator+=(const contiguous_matrix &other) {
     if ((m_cols != other.m_cols) || (m_rows != other.m_rows)) throw std::runtime_error("Mismatched matrix sizes");
-    ranges::transform(m_buffer, other.m_buffer, m_buffer.begin(), std::plus<value_type>{});
+    std::transform(m_buffer.begin(), m_buffer.end(), other.m_buffer.begin(), m_buffer.begin(), std::plus<value_type>{});
     return *this;
   }
 
   contiguous_matrix &operator-=(const contiguous_matrix &other) {
     if ((m_cols != other.m_cols) || (m_rows != other.m_rows)) throw std::runtime_error("Mismatched matrix sizes");
-    ranges::transform(m_buffer, other.m_buffer, m_buffer.begin(), std::minus<value_type>{});
+    std::transform(m_buffer.begin(), m_buffer.end(), other.m_buffer.begin(), m_buffer.begin(),
+                   std::minus<value_type>{});
     return *this;
   }
 
   contiguous_matrix &operator*=(value_type rhs) {
-    ranges::actions::transform(m_buffer, [rhs](auto &&val) { return val * rhs; });
+    std::transform(m_buffer.begin(), m_buffer.end(), m_buffer.begin(), [rhs](auto &&val) { return val * rhs; });
     return *this;
   }
 
   contiguous_matrix &operator/=(value_type rhs) {
     if (rhs == 0) throw std::invalid_argument("Division by zero");
-    ranges::actions::transform(m_buffer, [rhs](auto &&val) { return val / rhs; });
+    std::transform(m_buffer.begin(), m_buffer.end(), m_buffer.begin(), [rhs](auto &&val) { return val / rhs; });
     return *this;
   }
 
@@ -171,8 +166,8 @@ public:
     for (size_type i = 0; i < rows(); i++) {
       const auto first_row = (*this)[i];
       const auto second_row = other[i];
-      if (!ranges::equal(first_row, second_row,
-                         [&precision](auto first, auto second) { return is_roughly_equal(first, second, precision); }))
+      if (!std::equal(first_row.begin(), first_row.end(), second_row.begin(),
+                      [precision](auto first, auto second) { return is_roughly_equal(first, second, precision); }))
         return false;
     }
     return true;
@@ -210,7 +205,7 @@ public:
     for (size_type i = 0; i < m_rows; i++) {
       for (size_type j = 0; j < t_rhs.m_rows; j++) {
         const auto range_first = (*this)[i], range_second = t_rhs[j];
-        res[i][j] = ranges::inner_product(range_first, range_second, value_type{});
+        res[i][j] = std::inner_product(range_first.begin(), range_first.end(), range_second.begin(), value_type{});
       }
     }
 
@@ -231,8 +226,6 @@ public:
   const_iterator cbegin() const { return m_buffer.cbegin(); }
   const_iterator cend() const { return m_buffer.cend(); }
 };
-
-static_assert(ranges::random_access_range<contiguous_matrix<float>>, "Contigous matrix is not a random access range");
 
 // clang-format off
 template <typename T> contiguous_matrix<T> operator*(const contiguous_matrix<T> &lhs, T rhs) { auto res = lhs; res *= rhs; return res; }
