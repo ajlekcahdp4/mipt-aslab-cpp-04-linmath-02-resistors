@@ -14,7 +14,6 @@
 
 #include <concepts>
 #include <optional>
-#include <scn/scn.h>
 #include <string>
 
 #include <boost/fusion/adapted/std_pair.hpp>
@@ -35,8 +34,6 @@
 
 #include "linear_solver.hpp"
 #include "resistor_network.hpp"
-
-#include <range/v3/all.hpp>
 
 namespace po = boost::program_options;
 namespace x3 = boost::spirit::x3;

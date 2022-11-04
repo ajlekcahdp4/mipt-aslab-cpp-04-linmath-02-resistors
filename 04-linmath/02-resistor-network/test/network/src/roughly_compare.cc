@@ -8,6 +8,7 @@
  * ----------------------------------------------------------------------------
  */
 
+#include <algorithm>
 #include <fstream>
 #include <iostream>
 #include <set>
@@ -19,32 +20,32 @@
 #include <boost/program_options.hpp>
 #include <boost/program_options/option.hpp>
 
-#include <range/v3/algorithm.hpp>
-
-#include <scn/scn.h>
-
 namespace po = boost::program_options;
 
 bool contain_same(std::string name_a, std::string name_b) {
-  scn::owning_file file_a{name_a.c_str(), "r"};
-  scn::owning_file file_b{name_b.c_str(), "r"};
+  std::ifstream file_a{name_a};
+  std::ifstream file_b{name_b};
 
-  if (!file_a.valid()) {
+  if (!file_a.good()) {
     std::cout << "Can't open " << name_a << " \n";
     return false;
   }
 
-  if (!file_b.valid()) {
+  if (!file_b.good()) {
     std::cout << "Can't open " << name_b << " \n";
     return false;
   }
 
   std::vector<double> vec_a, vec_b;
-  scn::scan_list(file_a, vec_a);
-  scn::scan_list(file_b, vec_b);
 
-  return ranges::equal(vec_a, vec_b,
-                       [](auto &first, auto &second) { return throttle::is_roughly_equal(first, second, 1e-3); });
+  std::copy(std::istream_iterator<float>(file_a), std::istream_iterator<float>(), std::back_inserter(vec_a));
+  std::copy(std::istream_iterator<float>(file_b), std::istream_iterator<float>(), std::back_inserter(vec_b));
+
+  if (vec_a.size() != vec_b.size()) return false;
+
+  return std::equal(vec_a.begin(), vec_a.end(), vec_b.begin(), [](const auto &first, const auto &second) {
+    return throttle::is_roughly_equal(first, second, 1e-3);
+  });
 }
 
 int main(int argc, char *argv[]) {
