@@ -23,6 +23,7 @@
 #include <iterator>
 #include <limits>
 #include <optional>
+#include <range/v3/numeric/inner_product.hpp>
 #include <stdexcept>
 #include <utility>
 
@@ -117,7 +118,7 @@ private:
     const_iterator end() const { return const_iterator{m_past_row}; }
     const_iterator cbegin() const { return const_iterator{m_row}; }
     const_iterator cend() const { return const_iterator{m_past_row}; }
-    size_type size() const { return m_past_row - m_row; }
+    size_type      size() const { return m_past_row - m_row; }
   };
 
   class const_proxy_row {
@@ -309,8 +310,7 @@ public:
     for (size_type i = 0; i < rows(); i++) {
       for (size_type j = 0; j < t_rhs.rows(); j++) {
         const auto range_first = (*this)[i], range_second = t_rhs[j];
-        res[i][j] = ranges::accumulate(
-            ranges::views::zip_with(std::multiplies<value_type>{}, range_first, range_second), value_type{});
+        res[i][j] = ranges::inner_product(range_first, range_second, value_type{});
       }
     }
 
