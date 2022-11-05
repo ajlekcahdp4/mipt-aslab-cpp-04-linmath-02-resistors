@@ -10,24 +10,14 @@
 
 #pragma once
 
-#if !defined(yyFlexLexerOnce)
-#undef yyFlexLexer
-#define yyFlexLexer network_FlexLexer
-#include <FlexLexer.h>
-#endif
-
-#undef YY_DECL
-#define YY_DECL circuits::parser::symbol_type circuits::scanner::get_next_token()
-
-#include "bison_network_parser.hpp"
+#include <optional>
 
 namespace circuits {
 
-class scanner : public yyFlexLexer {
-private:
-public:
-  scanner() {}
-  circuits::parser::symbol_type get_next_token();
+struct network_edge {
+  unsigned              first, second;
+  double                res;
+  std::optional<double> emf = std::nullopt;
 };
 
 } // namespace circuits

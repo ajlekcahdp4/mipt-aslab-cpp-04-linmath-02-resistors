@@ -8,13 +8,14 @@
  * ----------------------------------------------------------------------------
  */
 
- %{
+%{
 #include <iostream>
+#include <numeric>
 
 #include "bison_network_parser.hpp"
 #include "scanner.hpp"
 
-#define yyterminate() circuits::parser::make_EOF();
+#define yyterminate() 
 
 using namespace circuits;
 %}
@@ -24,23 +25,22 @@ using namespace circuits;
 %option prefix="network_"
 %option yyclass="scanner"
 
-
 number      (0|[1-9][0-9]*)
-float       [+-]?([0-9]*[.])?[0-9]+
-
+float       [+-]?({number}|{number}[.]{number}?)
 
 %%
 
-";"             { std::cout << "SEMICOL" << "\n"; return parser::make_SEMICOL(); }
-","             { std::cout << "COLON" << "\n"; return parser::make_COMMA(); }
-"--"            { std::cout << "LINE" << "\n"; return parser::make_LINE(); }
-"V"             { std::cout << "VOLAGE" << "\n"; return parser::make_VOLTAGE(); }
+";"             { return parser::make_SEMICOL(); }
+","             { return parser::make_COMMA(); }
+"--"            { return parser::make_LINE(); }
+"V"             { return parser::make_VOLTAGE(); }
 
-{number}        { std::cout << yytext << "\n"; return parser::make_INTEGER(std::atoi(yytext)); }
-{float}         { std::cout << yytext << "\n"; return parser::make_FLOAT(std::atof(yytext)); }
+{number}        { return parser::make_UNSIGNED(std::stoi(yytext)); }
+{float}         { return parser::make_DOUBLE(std::stod(yytext)); }
 
 [ \t\n\r]       { }
 
-<<EOF>>         { return yyterminate(); }
+.               { return parser::make_YYerror(); }
+<<EOF>>         { return circuits::parser::make_YYEOF(); }
 
 %%

@@ -11,18 +11,12 @@
 #pragma once
 
 #include "bison_network_parser.hpp"
-#include "resistor_network.hpp"
+#include "edge.hpp"
 #include "scanner.hpp"
 
 #include <vector>
 
 namespace circuits {
-
-struct network_edge {
-  unsigned                first, second;
-  double                  res;
-  boost::optional<double> emf;
-};
 
 class driver {
 private:
@@ -33,12 +27,17 @@ private:
   friend class scanner;
 
 public:
-  std::pair<circuits::resistor_network, std::vector<network_edge>> m_parsed
+  std::vector<network_edge> m_parsed;
+  bool                      m_success = true;
 
-  driver()
-      : m_scanner{}, m_parser{m_scanner, *this} {}
+  driver() : m_scanner{}, m_parser{m_scanner, *this} {}
 
-  bool parse() { return m_parser.parse(); }
+  bool parse() {
+    m_success = true;
+    m_parser.parse();
+    return m_success;
+  }
+
   void switch_input_stream(std::istream *is) { m_scanner.switch_streams(is, nullptr); }
 };
 } // namespace circuits
