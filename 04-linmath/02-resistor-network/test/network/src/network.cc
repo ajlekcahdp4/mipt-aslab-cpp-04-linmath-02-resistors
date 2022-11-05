@@ -68,7 +68,7 @@ namespace circuit_parser {
 struct rule_d : error_handler {};
 struct rule_u : error_handler {};
 
-const x3::rule<rule_d, double>   double_named =   {"double"};
+const x3::rule<rule_d, double>   double_named = {"double"};
 const x3::rule<rule_u, unsigned> unsigned_named = {"unsigned"};
 
 const auto double_named_def = x3::real_parser<double>{};
