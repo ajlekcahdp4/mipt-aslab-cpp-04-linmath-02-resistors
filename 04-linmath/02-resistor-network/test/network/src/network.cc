@@ -14,12 +14,8 @@
 
 #include <concepts>
 #include <optional>
+#include <sstream>
 #include <string>
-
-#include <boost/fusion/adapted/std_pair.hpp>
-#include <boost/fusion/adapted/std_tuple.hpp>
-#include <boost/fusion/adapted/struct/adapt_struct.hpp>
-#include <boost/fusion/include/adapt_struct.hpp>
 
 #include <boost/lexical_cast.hpp>
 #include <boost/optional.hpp>
@@ -27,15 +23,31 @@
 #include <boost/program_options.hpp>
 #include <boost/program_options/option.hpp>
 
+#ifndef USE_BISON
+
+#include <boost/fusion/adapted/std_pair.hpp>
+#include <boost/fusion/adapted/std_tuple.hpp>
+#include <boost/fusion/adapted/struct/adapt_struct.hpp>
+#include <boost/fusion/include/adapt_struct.hpp>
+
 #include <boost/spirit/home/x3.hpp>
 #include <boost/spirit/home/x3/support/ast/position_tagged.hpp>
 #include <boost/spirit/home/x3/support/utility/annotate_on_success.hpp>
 #include <boost/spirit/home/x3/support/utility/error_reporting.hpp>
 
+#else
+
+#include "driver.hpp"
+
+#endif
+
 #include "linear_solver.hpp"
 #include "resistor_network.hpp"
 
 namespace po = boost::program_options;
+
+#ifndef USE_BISON
+
 namespace x3 = boost::spirit::x3;
 namespace ascii = x3::ascii;
 
@@ -111,6 +123,33 @@ std::optional<std::vector<circuit_parser::graph::network_edge>> parse_circuit() 
 }
 
 } // namespace circuit_parser
+
+#else
+
+namespace circuit_parser {
+
+std::optional<std::vector<circuits::network_edge>> parse_circuit() {
+  std::vector<circuits::network_edge> parse_result;
+
+  std::string input;
+  std::noskipws(std::cin);
+  std::copy(std::istream_iterator<char>{std::cin}, std::istream_iterator<char>{}, std::back_inserter(input));
+
+  circuits::driver drv{};
+
+  std::istringstream iss{input};
+  drv.switch_input_stream(&iss);
+
+  bool res = drv.parse();
+
+  if (!res) return std::nullopt;
+
+  return drv.m_parsed;
+}
+
+} // namespace circuit_parser
+
+#endif
 
 int main(int argc, char *argv[]) {
   bool non_verbose = false;
