@@ -68,19 +68,18 @@ namespace circuit_parser {
 struct rule_d : error_handler {};
 struct rule_u : error_handler {};
 
-const x3::rule<rule_d, double>   double_named = {"double"};
-const x3::rule<rule_u, unsigned> unsigned_named = {"unsigned"};
+constexpr x3::rule<rule_d, double>   double_named =   {"double"};
+constexpr x3::rule<rule_u, unsigned> unsigned_named = {"unsigned"};
 
-const auto double_named_def = x3::real_parser<double>{};
-const auto unsigned_named_def = x3::int_parser<unsigned>{};
+constexpr auto double_named_def = x3::real_parser<double>{};
+constexpr auto unsigned_named_def = x3::int_parser<unsigned>{};
 
 BOOST_SPIRIT_DEFINE(double_named, unsigned_named);
 
 struct edge_class;
 
-const x3::rule<edge_class, circuit_parser::graph::network_edge> const edge = "edge";
-
-const auto edge_def = unsigned_named > '-' > '-' > unsigned_named > ',' > double_named > ';' >> -(double_named >> 'V');
+constexpr x3::rule<edge_class, circuit_parser::graph::network_edge> edge = "edge";
+constexpr auto edge_def = unsigned_named > '-' > '-' > unsigned_named > ',' > double_named > ';' >> -(double_named >> 'V');
 
 BOOST_SPIRIT_DEFINE(edge);
 
