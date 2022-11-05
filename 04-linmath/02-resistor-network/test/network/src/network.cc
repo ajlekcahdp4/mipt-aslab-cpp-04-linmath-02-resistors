@@ -71,8 +71,8 @@ struct rule_u : error_handler {};
 constexpr x3::rule<rule_d, double>   double_named = {"double"};
 constexpr x3::rule<rule_u, unsigned> unsigned_named = {"unsigned"};
 
-constexpr auto double_named_def = x3::real_parser<double>{};
-constexpr auto unsigned_named_def = x3::int_parser<unsigned>{};
+const auto double_named_def = x3::real_parser<double>{};
+const auto unsigned_named_def = x3::int_parser<unsigned>{};
 
 BOOST_SPIRIT_DEFINE(double_named, unsigned_named);
 
