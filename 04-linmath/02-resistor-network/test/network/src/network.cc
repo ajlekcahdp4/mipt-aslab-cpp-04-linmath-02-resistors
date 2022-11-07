@@ -30,6 +30,13 @@
 #include <boost/fusion/adapted/struct/adapt_struct.hpp>
 #include <boost/fusion/include/adapt_struct.hpp>
 
+#ifndef USE_BISON
+
+#include <boost/fusion/adapted/std_pair.hpp>
+#include <boost/fusion/adapted/std_tuple.hpp>
+#include <boost/fusion/adapted/struct/adapt_struct.hpp>
+#include <boost/fusion/include/adapt_struct.hpp>
+
 #include <boost/spirit/home/x3.hpp>
 #include <boost/spirit/home/x3/support/ast/position_tagged.hpp>
 #include <boost/spirit/home/x3/support/utility/annotate_on_success.hpp>
@@ -41,10 +48,18 @@
 
 #endif
 
+#else
+
+#include "driver.hpp"
+
+#endif
+
 #include "linear_solver.hpp"
 #include "resistor_network.hpp"
 
 namespace po = boost::program_options;
+
+#ifndef USE_BISON
 
 #ifndef USE_BISON
 
@@ -147,6 +162,8 @@ std::optional<std::vector<circuits::network_edge>> parse_circuit() {
 }
 
 } // namespace circuit_parser
+
+#endif
 
 #endif
 
