@@ -30,13 +30,6 @@
 #include <boost/fusion/adapted/struct/adapt_struct.hpp>
 #include <boost/fusion/include/adapt_struct.hpp>
 
-#ifndef USE_BISON
-
-#include <boost/fusion/adapted/std_pair.hpp>
-#include <boost/fusion/adapted/std_tuple.hpp>
-#include <boost/fusion/adapted/struct/adapt_struct.hpp>
-#include <boost/fusion/include/adapt_struct.hpp>
-
 #include <boost/spirit/home/x3.hpp>
 #include <boost/spirit/home/x3/support/ast/position_tagged.hpp>
 #include <boost/spirit/home/x3/support/utility/annotate_on_success.hpp>
@@ -48,18 +41,10 @@
 
 #endif
 
-#else
-
-#include "driver.hpp"
-
-#endif
-
 #include "linear_solver.hpp"
 #include "resistor_network.hpp"
 
 namespace po = boost::program_options;
-
-#ifndef USE_BISON
 
 #ifndef USE_BISON
 
@@ -95,8 +80,8 @@ namespace circuit_parser {
 struct rule_d : error_handler {};
 struct rule_u : error_handler {};
 
-const x3::rule<rule_d, double>   double_named = {"double"};
-const x3::rule<rule_u, unsigned> unsigned_named = {"unsigned"};
+constexpr x3::rule<rule_d, double>   double_named = {"double"};
+constexpr x3::rule<rule_u, unsigned> unsigned_named = {"unsigned"};
 
 const auto double_named_def = x3::real_parser<double>{};
 const auto unsigned_named_def = x3::int_parser<unsigned>{};
@@ -105,8 +90,9 @@ BOOST_SPIRIT_DEFINE(double_named, unsigned_named);
 
 struct edge_class;
 
-const x3::rule<edge_class, circuit_parser::graph::network_edge> edge = "edge";
-const auto edge_def = unsigned_named > '-' > '-' > unsigned_named > ',' > double_named > ';' >> -(double_named >> 'V');
+constexpr x3::rule<edge_class, circuit_parser::graph::network_edge> edge = "edge";
+constexpr auto edge_def = unsigned_named > '-' > '-' > unsigned_named > ',' > double_named > ';' >>
+                          -(double_named >> 'V');
 
 BOOST_SPIRIT_DEFINE(edge);
 
@@ -162,8 +148,6 @@ std::optional<std::vector<circuits::network_edge>> parse_circuit() {
 }
 
 } // namespace circuit_parser
-
-#endif
 
 #endif
 
