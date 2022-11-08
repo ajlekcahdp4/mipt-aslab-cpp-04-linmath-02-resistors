@@ -40,7 +40,7 @@ float       [+-]?({number}|{number}[.]{number}?)
 
 [ \t\n\r]       { }
 
-.               { return parser::make_YYerror(); }
+.               { throw parser::syntax_error{"Unexpected symbol"}; }
 <<EOF>>         { return circuits::parser::make_YYEOF(); }
 
 %%
