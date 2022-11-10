@@ -9,7 +9,7 @@
  */
 
 %skeleton "lalr1.cc"
-%require "3.8"
+%require "3.5"
 
 %defines
 
@@ -21,6 +21,7 @@
 %define api.namespace { circuits }
 
 %code requires {
+
 #include <iostream>
 #include <string>
 #include <vector>
@@ -69,9 +70,11 @@ static circuits::parser::symbol_type yylex(circuits::scanner &p_scanner, circuit
 
 /* Terminals */
 %token <unsigned> UNSIGNED "unsigned"
-%token <double>   DOUBLE   "double"
+%token <double> DOUBLE "double"
 
-%type <double>    unsigned_or_double
+%token EOF 0 "end of file"
+
+%type <double> unsigned_or_double
 
 %type <circuits::network_edge> trailing_edge last_edge
 %type <std::vector<circuits::network_edge>> network
@@ -82,7 +85,7 @@ static circuits::parser::symbol_type yylex(circuits::scanner &p_scanner, circuit
 
 %%
 
-all: network            { driver.m_parsed = std::move($1); }
+all: network  { driver.m_parsed = std::move($1); }
 
 network:  network trailing_edge     { $$ = std::move($1); auto first = $2.first; $2.first = $$.back().first; $$.back() = $2; $$.emplace_back(first); }
           | network last_edge       { $$ = std::move($1); $2.first = $$.back().first; $$.back() = $2; }
@@ -91,8 +94,8 @@ network:  network trailing_edge     { $$ = std::move($1); auto first = $2.first;
 trailing_edge:  UNSIGNED COMMA unsigned_or_double SEMICOL unsigned_or_double VOLTAGE UNSIGNED LINE    { $$ = {$7, $1, $3, $5}; }
                 | UNSIGNED COMMA unsigned_or_double SEMICOL UNSIGNED LINE                             { $$ = {$5, $1, $3, std::nullopt}; }
 
-last_edge:  UNSIGNED COMMA unsigned_or_double SEMICOL unsigned_or_double VOLTAGE YYEOF                { $$ = {0, $1, $3, $5}; }
-            | UNSIGNED COMMA unsigned_or_double SEMICOL YYEOF                                         { $$ = {0, $1, $3}; }
+last_edge:  UNSIGNED COMMA unsigned_or_double SEMICOL unsigned_or_double VOLTAGE EOF                { $$ = {0, $1, $3, $5}; }
+            | UNSIGNED COMMA unsigned_or_double SEMICOL EOF                                         { $$ = {0, $1, $3}; }
 
 unsigned_or_double: UNSIGNED  { $$ = $1; }
                     | DOUBLE  { $$ = $1; }
