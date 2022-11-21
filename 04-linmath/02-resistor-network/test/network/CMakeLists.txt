@@ -11,13 +11,12 @@ if(USE_SPIRIT)
 
 else()
   target_compile_definitions(network PUBLIC -DUSE_BISON=1)
-  # Find bison and flex and set CMP0098 policy to new to use binary dir 
+  # Find bison and flex
   find_package(FLEX REQUIRED)
   find_package(BISON REQUIRED)
-  cmake_policy(SET CMP0098 NEW)
 
   bison_target(parser src/parser.y ${CMAKE_CURRENT_BINARY_DIR}/parser.y.cc DEFINES_FILE ${CMAKE_CURRENT_BINARY_DIR}/bison_network_parser.hpp)
-  flex_target(scanner src/scanner.l scanner.l.cc DEFINES_FILE)
+  flex_target(scanner src/scanner.l ${CMAKE_CURRENT_BINARY_DIR}/scanner.l.cc DEFINES_FILE)
   add_flex_bison_dependency(scanner parser)
 
   add_library(bison_parser STATIC ${BISON_parser_OUTPUTS} ${FLEX_scanner_OUTPUTS})
