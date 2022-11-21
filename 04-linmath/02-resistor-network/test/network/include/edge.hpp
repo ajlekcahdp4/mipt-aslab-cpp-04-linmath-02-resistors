@@ -18,6 +18,9 @@ struct network_edge {
   unsigned              first, second;
   double                res;
   std::optional<double> emf = std::nullopt;
+
+  network_edge(unsigned f = 0, unsigned s = 0, double r = 0, std::optional<double> e = std::nullopt)
+      : first{f}, second{s}, res{r}, emf{e} {}
 };
 
 } // namespace circuits
