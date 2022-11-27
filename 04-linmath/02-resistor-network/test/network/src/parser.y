@@ -91,10 +91,12 @@ network:  network trailing_edge     { $$ = std::move($1); auto first = $2.first;
           | network last_edge       { $$ = std::move($1); $2.first = $$.back().first; $$.back() = $2; }
           | UNSIGNED LINE           { $$.emplace_back($1, 0, 0, std::nullopt); }
 
-trailing_edge:  UNSIGNED COMMA unsigned_or_double SEMICOL unsigned_or_double VOLTAGE UNSIGNED LINE    { $$ = {$7, $1, $3, $5}; }
-                | UNSIGNED COMMA unsigned_or_double SEMICOL UNSIGNED LINE                             { $$ = {$5, $1, $3, std::nullopt}; }
+trailing_edge:  UNSIGNED COMMA unsigned_or_double SEMICOL unsigned_or_double VOLTAGE UNSIGNED LINE              { $$ = {$7, $1, $3, $5}; }
+                | UNSIGNED COMMA unsigned_or_double SEMICOL unsigned_or_double VOLTAGE SEMICOL UNSIGNED LINE    { $$ = {$8, $1, $3, $5}; }
+                | UNSIGNED COMMA unsigned_or_double SEMICOL UNSIGNED LINE                                       { $$ = {$5, $1, $3, std::nullopt}; }
 
 last_edge:  UNSIGNED COMMA unsigned_or_double SEMICOL unsigned_or_double VOLTAGE EOF                { $$ = {0, $1, $3, $5}; }
+            | UNSIGNED COMMA unsigned_or_double SEMICOL unsigned_or_double VOLTAGE SEMICOL EOF      { $$ = {0, $1, $3, $5}; }
             | UNSIGNED COMMA unsigned_or_double SEMICOL EOF                                         { $$ = {0, $1, $3}; }
 
 unsigned_or_double: UNSIGNED  { $$ = $1; }

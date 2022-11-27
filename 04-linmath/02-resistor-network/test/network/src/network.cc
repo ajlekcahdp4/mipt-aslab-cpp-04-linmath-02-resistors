@@ -92,7 +92,7 @@ struct edge_class;
 
 constexpr x3::rule<edge_class, circuit_parser::graph::network_edge> edge = "edge";
 constexpr auto edge_def = unsigned_named > '-' > '-' > unsigned_named > ',' > double_named > ';' >>
-                          -(double_named >> 'V');
+                          -(double_named >> 'V' >> -x3::lit(';'));
 
 BOOST_SPIRIT_DEFINE(edge);
 
