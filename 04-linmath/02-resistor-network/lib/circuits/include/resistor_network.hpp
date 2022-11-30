@@ -25,6 +25,8 @@ class connected_resistor_network {
 
   std::vector<short_circuit_edge> m_short_circuits;
 
+  void insert_impl(unsigned first, unsigned second, double resistance, double emf, bool to_throw);
+
 public:
   void insert(unsigned first, unsigned second, double resistance, double emf);
   void try_insert(unsigned first, unsigned second, double resistance, double emf);

@@ -18,12 +18,14 @@
 
 namespace circuits {
 
-void connected_resistor_network::insert(unsigned first, unsigned second, double resistance, double emf) {
+void connected_resistor_network::insert_impl(unsigned first, unsigned second, double resistance, double emf,
+                                             bool to_throw) {
   if (first == second) throw std::invalid_argument("Circuit graph can't have loops");
 
   auto found = m_map.find(first);
   if (found != m_map.end() && found->second.find(second) != found->second.end()) {
-    throw std::invalid_argument("Edge is already present in the graph");
+    if (to_throw) throw std::invalid_argument("Edge is already present in the graph");
+    return;
   }
 
   if (first > second) {
@@ -37,23 +39,12 @@ void connected_resistor_network::insert(unsigned first, unsigned second, double 
   if (throttle::is_roughly_equal(resistance, 0.0)) m_short_circuits.push_back({first, second, emf});
 }
 
+void connected_resistor_network::insert(unsigned first, unsigned second, double resistance, double emf) {
+  insert_impl(first, second, resistance, emf, true);
+}
+
 void connected_resistor_network::try_insert(unsigned first, unsigned second, double resistance, double emf) {
-  if (first == second) throw std::invalid_argument("Circuit graph can't have loops");
-
-  auto found = m_map.find(first);
-  if (found != m_map.end() && found->second.find(second) != found->second.end()) {
-    return;
-  }
-
-  if (first > second) {
-    std::swap(first, second);
-    emf = -emf;
-  }
-
-  m_map[first].insert({second, std::make_pair(resistance, emf)});
-  m_map[second].insert({first, std::make_pair(resistance, -emf)});
-
-  if (throttle::is_roughly_equal(resistance, 0.0)) m_short_circuits.push_back({first, second, emf});
+  insert_impl(first, second, resistance, emf, false);
 }
 
 connected_resistor_network::solution connected_resistor_network::solve() const {
@@ -81,51 +72,57 @@ connected_resistor_network::solution connected_resistor_network::solve() const {
     ++j;
   }
 
-  throttle::linmath::contiguous_matrix<double> extended_matrix{size + num_short_circuits,
-                                                               size + num_short_circuits + 1};
+  const auto make_extended_system = [&]() {
+    const auto sz = size + num_short_circuits;
 
-  for (const auto &v : iterator_map) {
-    const auto &[index, map_iter] = v;
-    auto row = extended_matrix[index];
+    throttle::linmath::contiguous_matrix<double> extended_matrix{sz, sz + 1};
 
-    for (const auto &a : map_iter->second) {
-      auto [res, emf] = a.second;
+    for (const auto &v : iterator_map) {
+      const auto &[index, map_iter] = v;
+      auto row = extended_matrix[index];
 
-      if (throttle::is_roughly_equal(res, 0.0)) {
-        const auto initial_index = iterator_map.at(index)->first;
-        const auto current_var =
-            short_circuit_current_map.at((initial_index > a.first) ? std::make_pair(a.first, initial_index)
-                                                                   : std::make_pair(initial_index, a.first));
-        row[current_var] += (initial_index > a.first ? -1.0 : 1.0);
-        continue;
+      for (const auto &a : map_iter->second) {
+        auto [res, emf] = a.second;
+
+        if (throttle::is_roughly_equal(res, 0.0)) {
+          const auto initial_index = iterator_map.at(index)->first;
+          const auto current_var =
+              short_circuit_current_map.at((initial_index > a.first) ? std::make_pair(a.first, initial_index)
+                                                                     : std::make_pair(initial_index, a.first));
+          row[current_var] += (initial_index > a.first ? -1.0 : 1.0);
+          continue;
+        }
+
+        row[index] += 1.0 / res;
+        if (a.first != m_map.begin()->first) {
+          auto corrensponding_index = index_map.at(a.first);
+          row[corrensponding_index] -= 1.0 / res;
+        }
+
+        row[size + num_short_circuits] -= emf / res;
+      }
+    }
+
+    for (unsigned i = size; const auto &v : m_short_circuits) {
+      auto row = extended_matrix[i++];
+
+      if (v.first != m_map.begin()->first) {
+        auto first = index_map.at(v.first);
+        row[first] = 1.0;
       }
 
-      row[index] += 1.0 / res;
-      if (a.first != m_map.begin()->first) {
-        auto corrensponding_index = index_map.at(a.first);
-        row[corrensponding_index] -= 1.0 / res;
+      if (v.second != m_map.begin()->first) {
+        auto second = index_map.at(v.second);
+        row[second] = -1.0;
       }
 
-      row[size + num_short_circuits] -= emf / res;
-    }
-  }
-
-  for (unsigned i = size; const auto &v : m_short_circuits) {
-    auto row = extended_matrix[i++];
-
-    if (v.first != m_map.begin()->first) {
-      auto first = index_map.at(v.first);
-      row[first] = 1.0;
+      row[size + num_short_circuits] = -v.emf;
     }
 
-    if (v.second != m_map.begin()->first) {
-      auto second = index_map.at(v.second);
-      row[second] = -1.0;
-    }
+    return extended_matrix;
+  };
 
-    row[size + num_short_circuits] = -v.emf;
-  }
-
+  auto extended_matrix = make_extended_system();
   // Solve the linear system of equations to find unkown potentials and currents.
   auto unknowns = throttle::nonsingular_solver(std::move(extended_matrix));
 

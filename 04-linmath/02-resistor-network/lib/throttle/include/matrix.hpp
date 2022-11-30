@@ -152,7 +152,7 @@ public:
     return true;
   }
 
-  matrix &transpose() {
+  matrix &transpose() & {
     matrix transposed{cols(), rows()};
 
     for (size_type i = 0; i < rows(); i++) {

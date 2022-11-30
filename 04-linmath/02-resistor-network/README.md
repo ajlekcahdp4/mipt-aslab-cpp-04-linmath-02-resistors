@@ -6,6 +6,9 @@ Current calculation in networks of resistors & DC sources.
 ### Linux
 ```sh
 cmake -S ./ -B build/ -DCMAKE_BUILD_TYPE=Release
+# For Boost.Spirit parser, by default a bison one is used
+cmake -S ./ -B build/ -DCMAKE_BUILD_TYPE=Release -DUSE_SPIRIT=ON
+
 cd build/
 make -j12 install
 ```
@@ -18,7 +21,7 @@ ctest
 ```
 
 ## 3. Test driver program
-The main test driver is _network_. Boost.Spirit X3 is required.
+The main test driver is _network_. Either Boost.Spirit X3 or Bison/Flex is required to build the parser. Additionally, Boost is an unconditional requirement for program options and misc utilities.
 
 ```sh
 # Build and install
