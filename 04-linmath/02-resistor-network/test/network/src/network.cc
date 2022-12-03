@@ -151,7 +151,7 @@ std::optional<std::vector<circuits::network_edge>> parse_circuit() {
 
 #endif
 
-int main(int argc, char *argv[]) {
+int main(int argc, char *argv[]) try {
   bool non_verbose = false;
 
   po::options_description desc("Available options");
@@ -208,10 +208,17 @@ int main(int argc, char *argv[]) {
 
   for (const auto &v : currents_to_print) {
     auto [temp_1, temp_2, name_1, name_2] = v;
+    constexpr auto precision = 1e-6;
+
+    auto current = currents[temp_1][temp_2];
+    auto rounded_current = (std::abs(current) > precision ? current : 0.0);
+
     if (!non_verbose) {
-      std::cout << name_1 << " -- " << name_2 << ": " << currents[temp_1][temp_2] << " A\n";
+      std::cout << name_1 << " -- " << name_2 << ": " << rounded_current << " A\n";
     } else {
-      std::cout << currents[temp_1][temp_2] << "\n";
+      std::cout << rounded_current << "\n";
     }
   }
+} catch (std::exception &e) {
+  std::cerr << "Encountered error: " << e.what() << "\n";
 }
