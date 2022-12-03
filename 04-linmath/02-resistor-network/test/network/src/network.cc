@@ -204,7 +204,13 @@ int main(int argc, char *argv[]) try {
     currents_to_print.push_back(std::make_tuple(temporary_first, temporary_second, v.first, v.second));
   }
 
-  auto [potentials, currents] = network.solve();
+  circuits::resistor_network::solution_currents currents;
+  try {
+    std::tie(std::ignore, currents) = network.solve();
+  } catch (std::exception &) {
+    std::cerr << "Network doesn't have a solution\n";
+    return EXIT_FAILURE;
+  }
 
   for (const auto &v : currents_to_print) {
     auto [temp_1, temp_2, name_1, name_2] = v;
