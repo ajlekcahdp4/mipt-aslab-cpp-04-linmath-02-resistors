@@ -221,4 +221,6 @@ int main(int argc, char *argv[]) try {
   }
 } catch (std::exception &e) {
   std::cerr << "Encountered error: " << e.what() << "\n";
+} catch (...) {
+  std::cerr << "Unknown error\n";
 }
