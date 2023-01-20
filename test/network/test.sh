@@ -1,32 +1,31 @@
-
+# Set up variables
+current_folder=${2:-./}
 base_folder="resources"
+passed=true
 
+# ASCII colors
 red=`tput setaf 1`
 green=`tput setaf 2`
 reset=`tput sgr0`
 
-current_folder=${2:-./}
-passed=true
+cd $current_folder/$base_folder
 
-for file in ${current_folder}/${base_folder}/*.dat; do
-    echo -n "Testing ${green}${file}${reset} ... "
+for file in *.dat; do
+  echo -n "Testing $green$file$reset ..."
+  $1 --nonverbose < $file > ans.tmp
+  filename="${file}.ans"
 
-    # Check if an argument to executable location has been passed to the program
-    $1 --nonverbose < $file > ${current_folder}/$base_folder/temp.tmp
-
-    # Compare inputs
-    if $3 ${file}.ans ${current_folder}/${base_folder}/temp.tmp; then
-        echo "${green}Passed${reset}"
-    else
-        echo "${red}Failed${reset}"
-        passed=false
-    fi
+  if $3 $filename ans.tmp; then
+    echo "${green}Passed${reset}"
+  else
+    echo "${red}Failed${reset}"
+    passed=false
+  fi
 done
 
 if ${passed}
 then
-    exit 0
+  exit 0
 else
-    # Exit with the best number for an exit code
-    exit 666
+  exit 666
 fi
