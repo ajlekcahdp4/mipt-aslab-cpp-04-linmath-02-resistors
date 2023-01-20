@@ -242,5 +242,8 @@ template <typename T> bool operator!=(const contiguous_matrix<T> &lhs, const con
 template <typename T> contiguous_matrix<T> transpose(const contiguous_matrix<T> &mat) { auto res = mat; res.transpose(); return res; }
 // clang-format on
 
+using contiguous_matrix_d = contiguous_matrix<double>;
+using contiguous_matrix_f = contiguous_matrix<float>;
+
 } // namespace linmath
 } // namespace throttle

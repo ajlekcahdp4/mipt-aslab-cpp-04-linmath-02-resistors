@@ -3,6 +3,7 @@
 #include "contiguous_matrix.hpp"
 #include "disjoint_set_forest.hpp"
 #include "equal.hpp"
+#include "linear_solver.hpp"
 #include "matrix.hpp"
 
 #include <stdexcept>
@@ -75,7 +76,7 @@ connected_resistor_network::solution connected_resistor_network::solve() const {
   const auto make_extended_system = [&]() {
     const auto sz = size + num_short_circuits;
 
-    throttle::linmath::contiguous_matrix<double> extended_matrix{sz, sz + 1};
+    linmath::contiguous_matrix_d extended_matrix{sz, sz + 1};
 
     for (const auto &v : iterator_map) {
       const auto &[index, map_iter] = v;
@@ -124,7 +125,7 @@ connected_resistor_network::solution connected_resistor_network::solve() const {
 
   auto extended_matrix = make_extended_system();
   // Solve the linear system of equations to find unkown potentials and currents.
-  auto unknowns = throttle::nonsingular_solver(std::move(extended_matrix));
+  auto unknowns = linmath::nonsingular_solver(linmath::matrix_d{std::move(extended_matrix)});
 
   auto result_potentials = solution_potentials{};
   // Fill base node potential with zero.

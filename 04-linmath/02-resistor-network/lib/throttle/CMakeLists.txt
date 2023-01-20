@@ -1,9 +1,5 @@
-set(LIB_SOURCES
-  src/linear_solver.cc
-)
-
-add_library(throttle ${LIB_SOURCES})
-target_include_directories(throttle PUBLIC include)
+add_library(throttle INTERFACE)
+target_include_directories(throttle INTERFACE include)
 
 set(UNIT_TEST_SOURCES
   test/test_vector.cc

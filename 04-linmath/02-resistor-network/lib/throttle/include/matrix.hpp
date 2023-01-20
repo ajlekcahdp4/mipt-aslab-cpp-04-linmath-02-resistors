@@ -27,8 +27,7 @@
 #include <stdexcept>
 #include <utility>
 
-namespace throttle {
-namespace linmath {
+namespace throttle::linmath {
 
 template <typename T>
 concept models_ordered_ring = requires(T a, T b) {
@@ -330,5 +329,7 @@ template <typename T> matrix<T> transpose(const matrix<T> &mat) { auto res = mat
 
 // clang-format on
 
-} // namespace linmath
-} // namespace throttle
+using matrix_d = matrix<double>;
+using matrix_f = matrix<float>;
+
+} // namespace throttle::linmath

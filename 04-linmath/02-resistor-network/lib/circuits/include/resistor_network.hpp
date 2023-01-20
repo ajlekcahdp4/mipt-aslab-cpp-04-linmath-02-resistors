@@ -13,6 +13,8 @@
 
 namespace circuits {
 
+namespace linmath = throttle::linmath;
+
 class connected_resistor_network {
   using resistance_emf_pair = std::pair<double, double>;
   std::unordered_map<unsigned, std::unordered_map<unsigned, resistance_emf_pair>> m_map;
