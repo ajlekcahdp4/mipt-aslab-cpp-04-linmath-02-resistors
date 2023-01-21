@@ -30,9 +30,9 @@ namespace throttle {
 namespace detail {
 template <typename t_key_type> struct disjoint_set_forest_node {
   using size_type = unsigned;
-  size_type m_parent_index;
-  size_type m_rank = 0;
 
+  size_type  m_parent_index;
+  size_type  m_rank = 0;
   t_key_type m_key;
 
   disjoint_set_forest_node(size_type p_parent_index, const t_key_type &p_key)
@@ -53,10 +53,6 @@ private:
   std::unordered_map<key_type, size_type, t_hash, t_eq> m_key_index_map;
   std::vector<node_type>                                m_node_vec;
 
-#if 0
-  std::stack<size_type> m_path_stack;
-#endif
-
 public:
   disjoint_set_forest() = default;
 
@@ -68,29 +64,11 @@ public:
 
 private:
   node_type &at_index(size_type p_index) { return m_node_vec.at(p_index); }
-
   size_type &parent_index(size_type p_node) { return at_index(p_node).m_parent_index; }
 
   size_type find_set_impl(size_type p_node) {
-#if 0
-    size_type &parent = parent_index(p_node);
-
-    while (parent != p_node) {
-      m_path_stack.push(p_node);
-      p_node = parent;
-      parent = parent_index(p_node);
-    }
-
-    while (!m_path_stack.empty()) {
-      parent_index(m_path_stack.top()) = p_node;
-      m_path_stack.pop();
-    }
-
-#else
     size_type &parent = parent_index(p_node);
     if (parent != p_node) parent = find_set_impl(parent);
-#endif
-
     return parent;
   }
 
