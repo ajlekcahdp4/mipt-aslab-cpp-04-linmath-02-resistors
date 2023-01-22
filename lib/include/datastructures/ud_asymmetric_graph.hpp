@@ -35,10 +35,13 @@ private:
   std::unordered_map<T, adjecency_map> m_vertices;
 
   t_comp    m_comp;
-  size_type m_edges;
+  size_type m_edges = 0;
 
 public:
   ud_asymmetric_graph() = default;
+
+  using iterator = typename decltype(m_vertices)::iterator;
+  using const_iterator = typename decltype(m_vertices)::const_iterator;
 
   auto insert_vertex(T identifier) { return m_vertices.insert({identifier, {}}); }
 
@@ -168,6 +171,8 @@ public:
   auto end() const { return m_vertices.cend(); }
   auto cbegin() const { return m_vertices.cbegin(); }
   auto cend() const { return m_vertices.cend(); }
+
+  bool empty() const { return (vertices() == 0); }
 };
 
 } // namespace throttle::containers

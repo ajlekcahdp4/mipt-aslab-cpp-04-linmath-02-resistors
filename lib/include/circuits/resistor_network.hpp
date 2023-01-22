@@ -1,3 +1,14 @@
+/*
+ * ----------------------------------------------------------------------------
+ * "THE BEER-WARE LICENSE" (Revision 42):
+ * <tsimmerman.ss@phystech.edu>, <alex.rom23@mail.ru> wrote this file.  As long as you
+ * retain this notice you can do whatever you want with this stuff. If we meet
+ * some day, and you think this stuff is worth it, you can buy us a beer in
+ * return.
+ * ----------------------------------------------------------------------------
+ */
+
+#include "datastructures/ud_asymmetric_graph.hpp"
 #include "datastructures/vector.hpp"
 #include "linmath/linear_solver.hpp"
 #include "linmath/matrix.hpp"
@@ -11,54 +22,43 @@
 
 #pragma once
 
-namespace circuits {
+namespace throttle::circuits {
 
-namespace linmath = throttle::linmath;
+using resistance_emf_pair = std::pair<double, double>;
 
+struct short_circuit_edge {
+  unsigned first;
+  unsigned second;
+  double   emf;
+};
+
+using circuit_graph_type = containers::ud_asymmetric_graph<unsigned, resistance_emf_pair>;
+using solution_potentials = std::unordered_map<unsigned, double>;
+using solution_currents = std::unordered_map<unsigned, std::unordered_map<unsigned, double>>;
+using solution = std::pair<solution_potentials, solution_currents>;
+
+namespace detail {
 class connected_resistor_network {
-  using resistance_emf_pair = std::pair<double, double>;
-  std::unordered_map<unsigned, std::unordered_map<unsigned, resistance_emf_pair>> m_map;
-
-  struct short_circuit_edge {
-    unsigned first;
-    unsigned second;
-    double   emf;
-  };
-
-  throttle::containers::vector<short_circuit_edge> m_short_circuits;
-
-  void insert_impl(unsigned first, unsigned second, double resistance, double emf, bool to_throw);
+  circuit_graph_type              m_graph;
+  std::vector<short_circuit_edge> m_short_circuits;
 
 public:
-  void insert(unsigned first, unsigned second, double resistance, double emf);
-  void try_insert(unsigned first, unsigned second, double resistance, double emf);
-
-  using solution_potentials = std::unordered_map<unsigned, double>;
-  using solution_currents = std::unordered_map<unsigned, std::unordered_map<unsigned, double>>;
-  using solution = std::pair<solution_potentials, solution_currents>;
+  connected_resistor_network(circuit_graph_type graph);
 
   solution solve() const;
 };
+} // namespace detail
 
 class resistor_network {
-public:
-  using resistance_emf_pair = std::pair<double, double>;
-  using map_type = std::unordered_map<unsigned, std::unordered_map<unsigned, resistance_emf_pair>>;
-
-private:
-  std::unordered_map<unsigned, std::unordered_map<unsigned, resistance_emf_pair>> m_map;
+  circuit_graph_type m_graph;
 
 public:
-  std::vector<connected_resistor_network> connected_components() const;
-  const map_type                         &graph() const { return m_map; }
+  std::vector<detail::connected_resistor_network> connected_components() const;
+
+  circuit_graph_type graph() const { return m_graph; }
+  solution           solve() const;
 
   void insert(unsigned first, unsigned second, double resistance = 0, double emf = 0);
-
-  using solution_potentials = std::unordered_map<unsigned, double>;
-  using solution_currents = std::unordered_map<unsigned, std::unordered_map<unsigned, double>>;
-  using solution = std::pair<solution_potentials, solution_currents>;
-
-  solution solve() const;
 };
 
-} // namespace circuits
+} // namespace throttle::circuits

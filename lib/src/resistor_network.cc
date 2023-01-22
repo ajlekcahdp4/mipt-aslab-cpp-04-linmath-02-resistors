@@ -6,6 +6,7 @@
 #include "linmath/linear_solver.hpp"
 #include "linmath/matrix.hpp"
 
+#include <algorithm>
 #include <stdexcept>
 #include <utility>
 
@@ -17,42 +18,25 @@
 
 #include <boost/functional/hash.hpp>
 
-namespace circuits {
+namespace throttle::circuits {
 
-void connected_resistor_network::insert_impl(unsigned first, unsigned second, double resistance, double emf,
-                                             bool to_throw) {
-  if (first == second) throw std::invalid_argument("Circuit graph can't have loops");
+namespace detail {
 
-  auto found = m_map.find(first);
-  if (found != m_map.end() && found->second.find(second) != found->second.end()) {
-    if (to_throw) throw std::invalid_argument("Edge is already present in the graph");
-    return;
+connected_resistor_network::connected_resistor_network(circuit_graph_type graph) : m_graph{graph} {
+  for (const auto &v : m_graph) {
+    for (const auto &p : v.second) {
+      auto first = v.first, second = p.first;
+      auto [res, emf] = p.second;
+      if (first < second && throttle::is_roughly_equal(res, 0.0)) m_short_circuits.push_back({first, second, emf});
+    }
   }
-
-  if (first > second) {
-    std::swap(first, second);
-    emf = -emf;
-  }
-
-  m_map[first].insert({second, std::make_pair(resistance, emf)});
-  m_map[second].insert({first, std::make_pair(resistance, -emf)});
-
-  if (throttle::is_roughly_equal(resistance, 0.0)) m_short_circuits.push_back({first, second, emf});
 }
 
-void connected_resistor_network::insert(unsigned first, unsigned second, double resistance, double emf) {
-  insert_impl(first, second, resistance, emf, true);
-}
-
-void connected_resistor_network::try_insert(unsigned first, unsigned second, double resistance, double emf) {
-  insert_impl(first, second, resistance, emf, false);
-}
-
-connected_resistor_network::solution connected_resistor_network::solve() const {
-  if (m_map.empty()) throw std::invalid_argument{"Network can't be empty"};
+solution connected_resistor_network::solve() const {
+  if (m_graph.empty()) throw std::invalid_argument{"Network can't be empty"};
 
   // Maps indexes 0, 1, .... to corrensponding iterators in the unordered map that represents the input.
-  std::unordered_map<unsigned, decltype(m_map)::const_iterator> iterator_map;
+  std::unordered_map<unsigned, decltype(m_graph)::const_iterator> iterator_map;
   // Maps indexes from input to 0, 1, ....
   std::unordered_map<unsigned, unsigned> index_map;
   // Maps pairs of input indexes to current variable
@@ -60,7 +44,7 @@ connected_resistor_network::solution connected_resistor_network::solve() const {
       short_circuit_current_map;
 
   unsigned j = 0;
-  for (auto start = std::next(m_map.begin()), end = m_map.end(); start != end; ++start, ++j) {
+  for (auto start = std::next(m_graph.begin()), end = m_graph.end(); start != end; ++start, ++j) {
     iterator_map[j] = start;
     index_map[start->first] = j;
   }
@@ -95,7 +79,7 @@ connected_resistor_network::solution connected_resistor_network::solve() const {
         }
 
         row[index] += 1.0 / res;
-        if (a.first != m_map.begin()->first) {
+        if (a.first != m_graph.begin()->first) {
           auto corrensponding_index = index_map.at(a.first);
           row[corrensponding_index] -= 1.0 / res;
         }
@@ -107,12 +91,12 @@ connected_resistor_network::solution connected_resistor_network::solve() const {
     for (unsigned i = size; const auto &v : m_short_circuits) {
       auto row = extended_matrix[i++];
 
-      if (v.first != m_map.begin()->first) {
+      if (v.first != m_graph.begin()->first) {
         auto first = index_map.at(v.first);
         row[first] = 1.0;
       }
 
-      if (v.second != m_map.begin()->first) {
+      if (v.second != m_graph.begin()->first) {
         auto second = index_map.at(v.second);
         row[second] = -1.0;
       }
@@ -129,7 +113,7 @@ connected_resistor_network::solution connected_resistor_network::solve() const {
 
   auto result_potentials = solution_potentials{};
   // Fill base node potential with zero.
-  result_potentials[m_map.begin()->first] = 0.0;
+  result_potentials[m_graph.begin()->first] = 0.0;
   for (unsigned i = 0; i < size; ++i) {
     result_potentials[iterator_map[i]->first] = unknowns[i][0];
   }
@@ -142,7 +126,7 @@ connected_resistor_network::solution connected_resistor_network::solve() const {
   }
 
   // Compute other currents from potentials, when there are no short-circuits.
-  for (const auto &v : m_map) {
+  for (const auto &v : m_graph) {
     for (const auto &c : v.second) {
       if (throttle::is_roughly_equal(c.second.first, 0.0)) continue;
       result_currents[v.first][c.first] =
@@ -153,62 +137,19 @@ connected_resistor_network::solution connected_resistor_network::solve() const {
   return {result_potentials, result_currents};
 }
 
+} // namespace detail
+
 void resistor_network::insert(unsigned first, unsigned second, double resistance, double emf) {
-  if (first == second) throw std::invalid_argument("Circuit graph can't have loops");
-
-  if (first > second) {
-    std::swap(first, second);
-    emf = -emf;
-  }
-
-  auto found = m_map.find(first);
-  if (found != m_map.end() && found->second.find(second) != found->second.end()) {
-    throw std::invalid_argument("Edge is already present in the graph");
-  }
-
-  m_map[first].insert({second, std::make_pair(resistance, emf)});
-  m_map[second].insert({first, std::make_pair(resistance, -emf)});
+  resistance_emf_pair fwd_pair = {resistance, emf}, bck_pair = {resistance, -emf};
+  m_graph.insert_edge({first, second}, fwd_pair, bck_pair);
 }
 
-std::vector<connected_resistor_network> resistor_network::connected_components() const {
-  throttle::containers::disjoint_set_forest<unsigned> dsu;
-
-  for (const auto &v : m_map) {
-    dsu.make_set(v.first);
-  }
-
-  for (const auto &v : m_map) {
-    for (const auto &p : v.second) {
-      // Here we do double work because each edge is visited twice, but this part isn't perfomance critical.
-      dsu.union_set(v.first, p.first);
-    }
-  }
-
-  std::unordered_map<unsigned, connected_resistor_network> connected_representatives;
-  // FindSet does not change the component representaive. Here we iterate over all the nodes and find their
-  // representaive to find all connected components.
-  for (const auto &v : m_map) {
-    const auto &found = dsu.find_set(v.first);
-    if (connected_representatives.contains(found)) continue;
-    connected_representatives.insert({found, connected_resistor_network{}});
-  }
-
-  for (const auto &v : m_map) {
-    for (const auto &p : v.second) {
-      const auto &found = dsu.find_set(v.first);
-      connected_representatives[found].try_insert(v.first, p.first, p.second.first, p.second.second);
-    }
-  }
-
-  std::vector<connected_resistor_network> result;
-  for (const auto &v : connected_representatives) {
-    result.push_back(std::move(v.second));
-  }
-
-  return result;
+std::vector<detail::connected_resistor_network> resistor_network::connected_components() const {
+  auto components = m_graph.connected_components();
+  return {components.begin(), components.end()};
 }
 
-resistor_network::solution resistor_network::solve() const {
+solution resistor_network::solve() const {
   auto     components = connected_components();
   solution result;
 
@@ -221,4 +162,4 @@ resistor_network::solution resistor_network::solve() const {
   return result;
 }
 
-} // namespace circuits
+} // namespace throttle::circuits

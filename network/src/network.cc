@@ -173,8 +173,9 @@ int main(int argc, char *argv[]) try {
     return EXIT_FAILURE;
   }
 
-  auto                       result = parsed.value();
-  circuits::resistor_network network;
+  auto result = parsed.value();
+
+  throttle::circuits::resistor_network network;
 
   std::unordered_map<unsigned, unsigned> input_vertex_to_mapped;
   std::unordered_map<unsigned, unsigned> mapped_to_input_vertex;
@@ -204,7 +205,7 @@ int main(int argc, char *argv[]) try {
     currents_to_print.push_back(std::make_tuple(temporary_first, temporary_second, v.first, v.second));
   }
 
-  circuits::resistor_network::solution_currents currents;
+  throttle::circuits::solution_currents currents;
   try {
     std::tie(std::ignore, currents) = network.solve();
   } catch (std::exception &) {
