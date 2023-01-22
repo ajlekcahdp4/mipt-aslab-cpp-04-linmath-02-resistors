@@ -84,7 +84,7 @@ private:
   }
 
 public:
-  const key_type &find_set(const key_type &p_key) { return at_index(find_set_impl(m_key_index_map.at(p_key))).m_key; }
+  key_type find_set(const key_type &p_key) { return at_index(find_set_impl(m_key_index_map.at(p_key))).m_key; }
 
   void union_set(const key_type &p_left, const key_type &p_right) {
     size_type left = find_set_impl(m_key_index_map.at(p_left)), right = find_set_impl(m_key_index_map.at(p_right));
