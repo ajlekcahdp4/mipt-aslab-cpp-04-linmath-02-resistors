@@ -10,7 +10,7 @@
 
 #pragma once
 
-#include "matrix.hpp"
+#include "linmath/matrix.hpp"
 #include <concepts>
 
 namespace throttle::linmath {

@@ -10,6 +10,7 @@ set(UNIT_TEST_SOURCES
   test/test_contiguous_matrix.cc
   test/test_matrix.cc
   test/test_linear_solver.cc
+  test/test_ud_assymetric_graph.cc
   test/main.cc
 )
 

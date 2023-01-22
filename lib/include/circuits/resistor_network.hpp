@@ -25,7 +25,7 @@ class connected_resistor_network {
     double   emf;
   };
 
-  std::vector<short_circuit_edge> m_short_circuits;
+  throttle::containers::vector<short_circuit_edge> m_short_circuits;
 
   void insert_impl(unsigned first, unsigned second, double resistance, double emf, bool to_throw);
 

@@ -12,10 +12,6 @@ TEST(test_linear_solver, test_1) {
   linmath::matrix_d sol{3, 1, {5, 3, -2}};
 
   auto res = linmath::nonsingular_solver(coefs, col);
-  for (unsigned i = 0; i < res.rows(); i++)
-    for (unsigned j = 0; j < res.cols(); j++)
-      std::cout << res[i][j] << " ";
-  std::cout << std::endl;
   EXPECT_EQ(res, sol);
 }
 

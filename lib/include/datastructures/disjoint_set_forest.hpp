@@ -25,7 +25,7 @@
 
 #include <stack>
 
-namespace throttle {
+namespace throttle::containers {
 
 namespace detail {
 template <typename t_key_type> struct disjoint_set_forest_node {
@@ -107,4 +107,4 @@ t_stream &operator<<(t_stream &p_ostream, disjoint_set_forest<t_key_type, t_eq, 
   return p_ostream;
 }
 
-} // namespace throttle
+} // namespace throttle::containers

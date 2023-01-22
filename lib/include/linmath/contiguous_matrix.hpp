@@ -24,8 +24,7 @@
 #include <stdexcept>
 #include <type_traits>
 
-namespace throttle {
-namespace linmath {
+namespace throttle::linmath {
 
 template <typename T>
 concept models_ring = requires(T a, T b) {
@@ -245,5 +244,4 @@ template <typename T> contiguous_matrix<T> transpose(const contiguous_matrix<T> 
 using contiguous_matrix_d = contiguous_matrix<double>;
 using contiguous_matrix_f = contiguous_matrix<float>;
 
-} // namespace linmath
-} // namespace throttle
+} // namespace throttle::linmath

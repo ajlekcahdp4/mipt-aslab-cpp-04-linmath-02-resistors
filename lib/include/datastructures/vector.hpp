@@ -24,8 +24,7 @@
 
 #include "utility.hpp"
 
-namespace throttle {
-namespace containers {
+namespace throttle::containers {
 
 template <typename T>
 requires std::is_nothrow_move_constructible_v<T> && std::is_nothrow_destructible_v<T>
@@ -247,5 +246,4 @@ public:
   const_iterator cend() const { return const_iterator{m_past_end_ptr}; }
 };
 
-} // namespace containers
-} // namespace throttle
+} // namespace throttle::containers

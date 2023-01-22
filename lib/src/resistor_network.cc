@@ -171,7 +171,7 @@ void resistor_network::insert(unsigned first, unsigned second, double resistance
 }
 
 std::vector<connected_resistor_network> resistor_network::connected_components() const {
-  throttle::disjoint_set_forest<unsigned> dsu;
+  throttle::containers::disjoint_set_forest<unsigned> dsu;
 
   for (const auto &v : m_map) {
     dsu.make_set(v.first);
