@@ -71,6 +71,6 @@ endif()
 find_package(Boost REQUIRED COMPONENTS program_options)
 
 add_subdirectory(lib)
-add_subdirectory(test)
+add_subdirectory(network)
 
 enable_testing()

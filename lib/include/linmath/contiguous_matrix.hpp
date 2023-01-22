@@ -10,9 +10,9 @@
 
 #pragma once
 
+#include "datastructures/vector.hpp"
 #include "equal.hpp"
 #include "utility.hpp"
-#include "vector.hpp"
 
 #include <algorithm>
 #include <concepts>

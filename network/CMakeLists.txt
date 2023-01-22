@@ -5,10 +5,9 @@ set(NET_SOURCES
 option(USE_SPIRIT OFF)
 
 add_executable(network ${NET_SOURCES})
-target_link_libraries(network throttle circuits Boost::program_options)
+target_link_libraries(network throttle Boost::program_options)
 
 if(USE_SPIRIT)
-
 else()
   target_compile_definitions(network PUBLIC -DUSE_BISON=1)
   # Find bison and flex
@@ -23,7 +22,6 @@ else()
   target_include_directories(bison_parser PUBLIC include ${CMAKE_CURRENT_BINARY_DIR})
 
   target_link_libraries(network bison_parser)
-
 endif()
 
 install(TARGETS network DESTINATION ${CMAKE_CURRENT_SOURCE_DIR}/bin)

@@ -1,10 +1,10 @@
-#include "resistor_network.hpp"
+#include "circuits/resistor_network.hpp"
 
-#include "contiguous_matrix.hpp"
-#include "disjoint_set_forest.hpp"
+#include "datastructures/disjoint_set_forest.hpp"
 #include "equal.hpp"
-#include "linear_solver.hpp"
-#include "matrix.hpp"
+#include "linmath/contiguous_matrix.hpp"
+#include "linmath/linear_solver.hpp"
+#include "linmath/matrix.hpp"
 
 #include <stdexcept>
 #include <utility>

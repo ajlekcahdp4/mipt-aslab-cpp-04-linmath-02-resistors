@@ -8,7 +8,8 @@
  * ----------------------------------------------------------------------------
  */
 
-#include "vector.hpp"
+#include "datastructures/vector.hpp"
+
 #include <algorithm>
 #include <gtest/gtest.h>
 #include <memory>

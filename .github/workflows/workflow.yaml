@@ -26,7 +26,7 @@ jobs:
     - name: CMake config
       run: |
         export PATH=/usr/local/bison/bin/:$PATH
-        cmake -S ./ -B build -DCMAKE_BUILD_TYPE=Release
+        cmake -S ./ -B build -DCMAKE_BUILD_TYPE=Release -DNOGTEST=OFF
 
     - name: CMake build
       run: |

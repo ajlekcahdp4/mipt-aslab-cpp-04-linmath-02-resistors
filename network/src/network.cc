@@ -8,9 +8,9 @@
 #include <string>
 #include <tuple>
 
-#include "contiguous_matrix.hpp"
-#include "matrix.hpp"
-#include "vector.hpp"
+#include "datastructures/vector.hpp"
+#include "linmath/contiguous_matrix.hpp"
+#include "linmath/matrix.hpp"
 
 #include <concepts>
 #include <optional>
@@ -41,8 +41,8 @@
 
 #endif
 
-#include "linear_solver.hpp"
-#include "resistor_network.hpp"
+#include "circuits/resistor_network.hpp"
+#include "linmath/linear_solver.hpp"
 
 namespace po = boost::program_options;
 

@@ -1,4 +1,4 @@
-#include "contiguous_matrix.hpp"
+#include "linmath/contiguous_matrix.hpp"
 
 #include <gtest/gtest.h>
 #include <iostream>

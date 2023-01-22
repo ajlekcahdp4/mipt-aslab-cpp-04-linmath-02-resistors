@@ -1,6 +1,6 @@
-#include "linear_solver.hpp"
-#include "matrix.hpp"
-#include "vector.hpp"
+#include "datastructures/vector.hpp"
+#include "linmath/linear_solver.hpp"
+#include "linmath/matrix.hpp"
 
 #include <optional>
 #include <utility>
