@@ -106,6 +106,5 @@ unsigned_or_double: UNSIGNED  { $$ = $1; }
 
 // Bison expects us to provide implementation - otherwise linker complains
 void circuits::parser::error(const std::string &message) {
-  std::cout << "Error: " << message << "\n";
-  driver.m_success = false;
+  throw std::runtime_error{message};
 }

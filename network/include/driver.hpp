@@ -14,6 +14,8 @@
 #include "edge.hpp"
 #include "scanner.hpp"
 
+#include <optional>
+#include <string>
 #include <vector>
 
 namespace circuits {
@@ -28,16 +30,10 @@ private:
 
 public:
   std::vector<network_edge> m_parsed;
-  bool                      m_success = true;
 
   driver() : m_scanner{}, m_parser{m_scanner, *this} {}
 
-  bool parse() {
-    m_success = true;
-    m_parser.parse();
-    return m_success;
-  }
-
+  void parse() { m_parser.parse(); }
   void switch_input_stream(std::istream *is) { m_scanner.switch_streams(is, nullptr); }
 };
 } // namespace circuits

@@ -129,7 +129,7 @@ std::optional<std::vector<circuit_parser::graph::network_edge>> parse_circuit() 
 
 namespace circuit_parser {
 
-std::optional<std::vector<circuits::network_edge>> parse_circuit() {
+std::vector<circuits::network_edge> parse_circuit() {
   std::vector<circuits::network_edge> parse_result;
 
   std::string input;
@@ -140,10 +140,7 @@ std::optional<std::vector<circuits::network_edge>> parse_circuit() {
 
   std::istringstream iss{input};
   drv.switch_input_stream(&iss);
-
-  bool res = drv.parse();
-
-  if (!res) return std::nullopt;
+  drv.parse();
 
   return drv.m_parsed;
 }
@@ -226,12 +223,7 @@ int main(int argc, char *argv[]) try {
   non_verbose = vm.count("nonverbose");
   auto parsed = circuit_parser::parse_circuit();
 
-  if (!parsed) {
-    std::cerr << "Aborting...\n";
-    return EXIT_FAILURE;
-  }
-
-  auto result = parsed.value();
+  auto result = parsed;
   return calculate_currents(result, !non_verbose);
 } catch (std::exception &e) {
   std::cerr << "Encountered error: " << e.what() << "\n";
