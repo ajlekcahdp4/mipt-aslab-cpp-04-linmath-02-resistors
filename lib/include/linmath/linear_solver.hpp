@@ -47,7 +47,11 @@ template <std::floating_point T> struct linear_equation_system final {
 
   throttle::containers::vector<equation_t> equations;
 
+  linear_equation_system(const size_type size) : equations{size} {}
+
   linear_equation_system(const containers::vector<equation_t> equations) : equations{equations} {}
+
+  void push(const equation_t &eq) { equations.push_back(eq); }
 
   size_type size() const { return equations.size(); }
 
