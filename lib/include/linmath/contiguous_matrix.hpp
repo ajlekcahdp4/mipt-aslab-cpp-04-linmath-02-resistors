@@ -55,11 +55,13 @@ private:
   size_type m_cols = 0;
   size_type m_rows = 0;
 
-  containers::vector<value_type> m_buffer;
+  std::vector<value_type> m_buffer;
 
 public:
+  contiguous_matrix() = default;
+
   contiguous_matrix(size_type rows, size_type cols, value_type val = value_type{})
-      : m_cols{cols}, m_rows{rows}, m_buffer{cols * rows, val} {}
+      : m_cols{cols}, m_rows{rows}, m_buffer(cols * rows, val) {}
 
   template <std::input_iterator it>
   contiguous_matrix(size_type rows, size_type cols, it start, it finish) : contiguous_matrix{rows, cols} {
@@ -215,8 +217,8 @@ public:
   pointer       data() { return m_buffer.data(); }
   const_pointer data() const { return m_buffer.data(); }
 
-  using iterator = typename containers::vector<value_type>::iterator;
-  using const_iterator = typename containers::vector<value_type>::const_iterator;
+  using iterator = typename std::vector<value_type>::iterator;
+  using const_iterator = typename std::vector<value_type>::const_iterator;
 
   iterator       begin() { return m_buffer.begin(); }
   iterator       end() { return m_buffer.end(); }

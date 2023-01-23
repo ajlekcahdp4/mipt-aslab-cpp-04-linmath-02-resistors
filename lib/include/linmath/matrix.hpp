@@ -46,19 +46,19 @@ public:
   using const_pointer = const T *;
   using size_type = typename std::size_t;
 
-  contiguous_matrix<T>        m_contiguous_matrix;
-  containers::vector<pointer> m_rows_vec;
+  contiguous_matrix<T>   m_contiguous_matrix;
+  std::vector<size_type> m_rows_vec;
 
   void update_rows_vec() {
     m_rows_vec.reserve(rows());
-    auto start = m_contiguous_matrix.data();
-
-    for (size_type i = 0; i < rows(); ++i, start += cols()) {
+    for (size_type i = 0, start = 0; i < rows(); ++i, start += cols()) {
       m_rows_vec.push_back(start);
     }
   }
 
 public:
+  matrix() = default;
+
   matrix(size_type rows, size_type cols, value_type val = value_type{}) : m_contiguous_matrix{rows, cols, val} {
     update_rows_vec();
   }
@@ -131,9 +131,12 @@ private:
     size_type size() const { return m_past_row - m_row; }
   };
 
+  auto row_pointer(size_type index) { return m_contiguous_matrix.data() + m_rows_vec[index]; }
+  auto row_pointer(size_type index) const { return m_contiguous_matrix.data() + m_rows_vec[index]; }
+
 public:
-  proxy_row       operator[](size_type index) { return proxy_row{m_rows_vec[index], cols()}; }
-  const_proxy_row operator[](size_type index) const { return const_proxy_row{m_rows_vec[index], cols()}; }
+  proxy_row       operator[](size_type index) { return proxy_row{row_pointer(index), cols()}; }
+  const_proxy_row operator[](size_type index) const { return const_proxy_row{row_pointer(index), cols()}; }
 
   size_type rows() const { return m_contiguous_matrix.rows(); }
   size_type cols() const { return m_contiguous_matrix.cols(); }

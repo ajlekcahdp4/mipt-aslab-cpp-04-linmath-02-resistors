@@ -108,7 +108,7 @@ solution connected_resistor_network::solve() const {
   };
 
   auto extended_matrix = make_extended_system();
-  // Solve the linear system of equations to find unkown potentials and currents.
+  // Solve the linear system of m_equations to find unkown potentials and currents.
   auto unknowns = linmath::nonsingular_solver(linmath::matrix_d{std::move(extended_matrix)});
 
   auto result_potentials = solution_potentials{};
@@ -118,7 +118,7 @@ solution connected_resistor_network::solve() const {
     result_potentials[iterator_map[i]->first] = unknowns[i][0];
   }
 
-  // Fill unkown currents that were found as a part of linear system of equations.
+  // Fill unkown currents that were found as a part of linear system of m_equations.
   auto result_currents = solution_currents{};
   for (const auto &v : short_circuit_current_map) {
     result_currents[v.first.first][v.first.second] = unknowns[v.second][0];
