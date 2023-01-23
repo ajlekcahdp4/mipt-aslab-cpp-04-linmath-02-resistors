@@ -18,9 +18,7 @@
 
 #include <boost/functional/hash.hpp>
 
-namespace throttle::circuits {
-
-namespace detail {
+namespace throttle::circuits::detail {
 
 connected_resistor_network::connected_resistor_network(circuit_graph_type graph) : m_graph{graph} {
   for (const auto &v : m_graph) {
@@ -137,29 +135,4 @@ solution connected_resistor_network::solve() const {
   return {result_potentials, result_currents};
 }
 
-} // namespace detail
-
-void resistor_network::insert(unsigned first, unsigned second, double resistance, double emf) {
-  resistance_emf_pair fwd_pair = {resistance, emf}, bck_pair = {resistance, -emf};
-  m_graph.insert_edge({first, second}, fwd_pair, bck_pair);
-}
-
-std::vector<detail::connected_resistor_network> resistor_network::connected_components() const {
-  auto components = m_graph.connected_components();
-  return {components.begin(), components.end()};
-}
-
-solution resistor_network::solve() const {
-  auto     components = connected_components();
-  solution result;
-
-  for (const auto &comp : components) {
-    auto individual_sol = comp.solve();
-    result.first.merge(individual_sol.first);
-    result.second.merge(individual_sol.second);
-  }
-
-  return result;
-}
-
-} // namespace throttle::circuits
+} // namespace throttle::circuits::detail

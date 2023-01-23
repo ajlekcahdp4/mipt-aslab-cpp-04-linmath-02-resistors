@@ -53,12 +53,30 @@ class resistor_network {
   circuit_graph_type m_graph;
 
 public:
-  std::vector<detail::connected_resistor_network> connected_components() const;
+  std::vector<detail::connected_resistor_network> connected_components() const {
+    auto components = m_graph.connected_components();
+    return {components.begin(), components.end()};
+  }
 
   circuit_graph_type graph() const { return m_graph; }
-  solution           solve() const;
 
-  void insert(unsigned first, unsigned second, double resistance = 0, double emf = 0);
+  solution solve() const {
+    auto     components = connected_components();
+    solution result;
+
+    for (const auto &comp : components) {
+      auto individual_sol = comp.solve();
+      result.first.merge(individual_sol.first);
+      result.second.merge(individual_sol.second);
+    }
+
+    return result;
+  }
+
+  void insert(unsigned first, unsigned second, double resistance = 0, double emf = 0) {
+    resistance_emf_pair fwd_pair = {resistance, emf}, bck_pair = {resistance, -emf};
+    m_graph.insert_edge({first, second}, fwd_pair, bck_pair);
+  }
 };
 
 } // namespace throttle::circuits
