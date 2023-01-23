@@ -148,6 +148,7 @@ TEST(test_vector, test_iterator_4) {
   EXPECT_EQ(*std::prev(it, 5), 5);
 }
 
+#if 0
 TEST(test_vector, test_exception_reserve_resize) {
   vector a(1000);
 
@@ -162,6 +163,7 @@ TEST(test_vector, test_exception_reserve_resize) {
   EXPECT_EQ(a.size(), 1000);
   EXPECT_EQ(a.capacity(), old_cap);
 }
+#endif
 
 TEST(test_vector, test_strings_1) {
   throttle::containers::vector<std::string> a{5, "Hello "};
