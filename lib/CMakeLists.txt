@@ -1,9 +1,5 @@
-set(THROTTLE_SOURCES
-  src/resistor_network.cc
-)
-
-add_library(throttle ${THROTTLE_SOURCES})
-target_include_directories(throttle PUBLIC include)
+add_library(throttle INTERFACE)
+target_include_directories(throttle INTERFACE include)
 
 set(UNIT_TEST_SOURCES
   test/test_vector.cc

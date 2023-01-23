@@ -175,7 +175,8 @@ int main(int argc, char *argv[]) try {
 
   auto result = parsed.value();
 
-  throttle::circuits::resistor_network network;
+  using network_type = throttle::circuits::resistor_network<unsigned>;
+  network_type network;
 
   std::unordered_map<unsigned, unsigned> input_vertex_to_mapped;
   std::unordered_map<unsigned, unsigned> mapped_to_input_vertex;
@@ -205,7 +206,7 @@ int main(int argc, char *argv[]) try {
     currents_to_print.push_back(std::make_tuple(temporary_first, temporary_second, v.first, v.second));
   }
 
-  throttle::circuits::solution_currents currents = network.solve().second;
+  auto currents = network.solve().second;
 
   for (const auto &v : currents_to_print) {
     auto [temp_1, temp_2, name_1, name_2] = v;
