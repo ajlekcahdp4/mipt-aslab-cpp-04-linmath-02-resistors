@@ -197,9 +197,9 @@ public:
     int     sign = 1;
 
     for (size_type i = 0; i < rows(); i++) {
+      if (i == cols()) return std::nullopt;
       auto [pivot_row, pivot_elem] = max_in_col_greater_eq(i, i);
-
-      if (pivot_elem == value_type{}) return std::nullopt;
+      if (is_roughly_equal(pivot_elem, value_type{})) return std::nullopt;
 
       if (i != pivot_row) {
         swap_rows(i, pivot_row);

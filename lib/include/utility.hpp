@@ -12,8 +12,7 @@
 
 #include <iterator>
 
-namespace throttle {
-namespace utility {
+namespace throttle::utility {
 
 static inline int clz(unsigned x) { return __builtin_clz(x); }
 static inline int clz(unsigned long x) { return __builtin_clzl(x); }
@@ -106,5 +105,4 @@ public:
   reference operator[](difference_type n) const { return *(*this + n); }
 };
 
-} // namespace utility
-} // namespace throttle
+} // namespace throttle::utility
