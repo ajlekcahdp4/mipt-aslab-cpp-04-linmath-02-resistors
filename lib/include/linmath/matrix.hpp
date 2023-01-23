@@ -140,7 +140,9 @@ public:
 
   size_type rows() const { return m_contiguous_matrix.rows(); }
   size_type cols() const { return m_contiguous_matrix.cols(); }
-  bool      square() const { return (cols() == rows()); }
+  size_type min_dimension() const { return std::min(rows(), cols()); }
+
+  bool square() const { return (cols() == rows()); }
 
   bool equal(const matrix &other, const value_type &precision = default_precision<value_type>::m_prec) const {
     if ((rows() != other.rows()) || (cols() != other.cols())) return false;
@@ -192,18 +194,17 @@ public:
   }
 
 public:
-  std::optional<int> convert_to_row_echelon() requires std::is_floating_point_v<value_type> {
+  int convert_to_row_echelon() requires std::is_floating_point_v<value_type> {
     matrix &mat = *this;
     int     sign = 1;
 
-    for (size_type i = 0; i < rows(); i++) {
-      if (i == cols()) return std::nullopt;
+    for (size_type i = 0; i < min_dimension(); i++) {
       auto [pivot_row, pivot_elem] = max_in_col_greater_eq(i, i);
-      if (is_roughly_equal(pivot_elem, value_type{})) return std::nullopt;
+      if (is_roughly_equal(pivot_elem, value_type{})) return 0;
 
       if (i != pivot_row) {
         swap_rows(i, pivot_row);
-        sign *= -1;
+        sign = -sign;
       }
 
       for (size_type to_elim_row = 0; to_elim_row < rows(); to_elim_row++) {
@@ -257,7 +258,7 @@ public:
     auto   res = tmp.convert_to_row_echelon();
     if (!res) return value_type{};
 
-    value_type val = res.value();
+    value_type val = res;
     for (size_type i = 0; i < rows(); i++) {
       val *= tmp[i][i];
     }
