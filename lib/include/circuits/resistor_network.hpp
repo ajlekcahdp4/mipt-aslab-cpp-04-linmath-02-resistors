@@ -51,12 +51,14 @@ private:
   std::vector<short_circuit_edge> m_short_circuits;
 
 public:
+  // The graph passed to this constructor must consist of only one connected components. This requirement is not
+  // validated in any way whatsoever. This class is not supposed to be used by the end user.
   connected_resistor_network(circuit_graph_type graph) : m_graph{graph} {
     for (const auto &v : m_graph) {
       for (const auto &p : v.second) {
         auto first = v.first, second = p.first;
         auto [res, emf] = p.second;
-        if (first < second && throttle::is_roughly_equal(res, 0.0)) m_short_circuits.push_back({first, second, emf});
+        if (throttle::is_roughly_equal(res, 0.0)) m_short_circuits.push_back({first, second, emf});
       }
     }
   }
@@ -64,103 +66,128 @@ public:
   circuit_graph_type graph() const { return m_graph; }
 
   solution solve() const {
-    if (m_graph.empty()) throw std::invalid_argument{"Network can't be empty"};
+    if (m_graph.empty()) return {}; // If the network is empty, then there's nothing to do
 
-    // Maps indexes 0, 1, .... to corrensponding iterators in the unordered map that represents the input.
-    std::unordered_map<unsigned, typename decltype(m_graph)::const_iterator> iterator_map;
-    // Maps indexes from input to 0, 1, ....
-    std::unordered_map<T, unsigned> index_map;
-    // Maps pairs of input indexes to current variable
-    std::unordered_map<std::pair<T, T>, unsigned, boost::hash<std::pair<unsigned, unsigned>>> short_circuit_current_map;
+    const auto vertices = m_graph.vertices();
+    const auto num_short_circuits = m_short_circuits.size() / 2; // Divide by 2 because there are symmetric pairs
 
-    unsigned j = 0;
-    for (auto start = std::next(m_graph.begin()), end = m_graph.end(); start != end; ++start, ++j) {
-      iterator_map[j] = start;
-      index_map[start->first] = j;
+    using system_type = linmath::linear_equation_system<double>;
+    using equation_type = typename system_type::equation_type;
+    using mapped_pair = std::pair<unsigned, unsigned>;
+
+    std::unordered_map<T, unsigned> id_map;         // Maps identifier from input to 0, 1, ...
+    std::unordered_map<unsigned, T> inverse_id_map; // Maps 0, 1, ... to the input identifiers
+    std::unordered_map<mapped_pair, std::pair<unsigned, double>, boost::hash<mapped_pair>>
+        short_circuit_current_map; // Maps pairs of input indexes to current variable
+
+    for (auto j = 0; const auto &v : m_graph) {
+      id_map[v.first] = j;
+      inverse_id_map[j++] = v.first;
     }
 
-    const auto size = iterator_map.size();
-    const auto num_short_circuits = m_short_circuits.size();
-
-    for (j = size; const auto &v : m_short_circuits) {
-      short_circuit_current_map.insert({{v.first, v.second}, j});
-      ++j;
+    for (auto j = vertices; const auto &v : m_short_circuits) {
+      const auto  mapped_first = id_map.at(v.second), mapped_second = id_map.at(v.first);
+      mapped_pair canonical_pair = {mapped_first < mapped_second ? mapped_pair{mapped_first, mapped_second}
+                                                                 : mapped_pair{mapped_second, mapped_first}};
+      if (short_circuit_current_map.contains(canonical_pair)) continue;
+      short_circuit_current_map.insert({canonical_pair, {j++, v.emf}});
     }
 
-    const auto make_extended_system = [&]() {
-      const auto sz = size + num_short_circuits;
+    const auto zero_potential_mapped_id = id_map.at(m_graph.begin()->first);
 
-      linmath::contiguous_matrix_d extended_matrix{sz, sz + 1};
+    const auto make_system = [&]() {
+      const auto variables = vertices + num_short_circuits;
 
-      for (const auto &v : iterator_map) {
-        const auto &[index, map_iter] = v;
-        auto row = extended_matrix[index];
+      // This is the linear system that we are constructing.
+      system_type   system;
+      equation_type equation(variables);
+      equation[zero_potential_mapped_id] = 1.0;
+      system.push(equation);
+      equation.reset();
 
-        for (const auto &a : map_iter->second) {
-          auto [res, emf] = a.second;
+      // Step 1. Iterate over all points and use vertex current method to construct a linear equation.
+      for (auto start = std::next(m_graph.begin()), finish = m_graph.end(); start != finish; ++start) {
+        const auto &v = *start;
+
+        const auto &[current_id, adj_map] = v;
+        const auto current_mapped_id = id_map.at(current_id);
+
+        // Step 2. Find all vertices that are adjacent to the current one.
+        for (const auto &a : adj_map) {
+          const auto [res, emf] = a.second;
+          const auto second_id = a.first;
+          const auto second_mapped_id = id_map.at(second_id);
+          const bool is_second_zero_potential = (second_mapped_id == zero_potential_mapped_id);
 
           if (throttle::is_roughly_equal(res, 0.0)) {
-            const auto initial_index = iterator_map.at(index)->first;
-            const auto current_var =
-                short_circuit_current_map.at((initial_index > a.first) ? std::make_pair(a.first, initial_index)
-                                                                       : std::make_pair(initial_index, a.first));
-            row[current_var] += (initial_index > a.first ? -1.0 : 1.0);
+            const bool first_less_second = current_mapped_id < second_mapped_id;
+            const auto current_var = (short_circuit_current_map.at(
+                                          (first_less_second) ? std::make_pair(current_mapped_id, second_mapped_id)
+                                                              : std::make_pair(second_mapped_id, current_mapped_id)))
+                                         .first;
+            equation[current_var] += (first_less_second ? 1.0 : -1.0);
             continue;
           }
 
-          row[index] += 1.0 / res;
-          if (a.first != m_graph.begin()->first) {
-            auto corrensponding_index = index_map.at(a.first);
-            row[corrensponding_index] -= 1.0 / res;
+          const auto conductivity = 1.0 / res;
+
+          equation[current_mapped_id] += conductivity;
+          if (!is_second_zero_potential) {
+            equation[second_mapped_id] -= conductivity;
           }
 
-          row[size + num_short_circuits] -= emf / res;
+          equation.free_coeff() -= emf / res;
         }
+
+        system.push(equation);
+        equation.reset();
       }
 
-      for (unsigned i = size; const auto &v : m_short_circuits) {
-        auto row = extended_matrix[i++];
+      for (const auto &v : short_circuit_current_map) {
+        const auto [first_id, second_id] = v.first;
+        const auto emf = v.second.second;
+        if (first_id != zero_potential_mapped_id) equation[first_id] = 1.0;
+        if (second_id != zero_potential_mapped_id) equation[second_id] = -1.0;
 
-        if (v.first != m_graph.begin()->first) {
-          auto first = index_map.at(v.first);
-          row[first] = 1.0;
-        }
-
-        if (v.second != m_graph.begin()->first) {
-          auto second = index_map.at(v.second);
-          row[second] = -1.0;
-        }
-
-        row[size + num_short_circuits] = -v.emf;
+        equation.free_coeff() = -emf;
+        system.push(equation);
+        equation.reset();
       }
 
-      return extended_matrix;
+      return system;
     };
 
-    auto extended_matrix = make_extended_system();
-    // Solve the linear system of m_equations to find unkown potentials and currents.
-    auto unknowns = linmath::nonsingular_solver(linmath::matrix_d{std::move(extended_matrix)});
+    // Solve the linear system of equations to find unkown potentials and currents.
+    auto system = make_system();
+    auto unknowns = system.solve().value();
 
-    auto result_potentials = solution_potentials{};
     // Fill base node potential with zero.
-    result_potentials[m_graph.begin()->first] = 0.0;
-    for (unsigned i = 0; i < size; ++i) {
-      result_potentials[iterator_map[i]->first] = unknowns[i][0];
+    auto result_potentials = solution_potentials{};
+    for (const auto &v : m_graph) {
+      const auto id = v.first;
+      const auto mapped = id_map[id];
+      result_potentials[id] = unknowns[mapped][0];
     }
 
     // Fill unkown currents that were found as a part of linear system of m_equations.
     auto result_currents = solution_currents{};
+
     for (const auto &v : short_circuit_current_map) {
-      result_currents[v.first.first][v.first.second] = unknowns[v.second][0];
-      result_currents[v.first.second][v.first.first] = -unknowns[v.second][0];
+      const auto fwd_current = unknowns[v.second.first][0];
+      const auto first_original_id = inverse_id_map[v.first.first];
+      const auto second_original_id = inverse_id_map[v.first.second];
+      result_currents[first_original_id][second_original_id] = fwd_current;
+      result_currents[second_original_id][first_original_id] = -fwd_current;
     }
 
     // Compute other currents from potentials, when there are no short-circuits.
     for (const auto &v : m_graph) {
       for (const auto &c : v.second) {
+        const auto first_id = v.first, second_id = c.first;
         if (throttle::is_roughly_equal(c.second.first, 0.0)) continue;
-        result_currents[v.first][c.first] =
-            (result_potentials[v.first] - result_potentials[c.first] + c.second.second) / c.second.first;
+        const auto [res, emf] = c.second;
+        const auto fwd_current = (result_potentials[first_id] - result_potentials[second_id] + emf) / res;
+        result_currents[first_id][second_id] = fwd_current;
       }
     }
 

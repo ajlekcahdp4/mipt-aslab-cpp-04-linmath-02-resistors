@@ -26,14 +26,22 @@ template <std::floating_point T> struct linear_equation final {
 
   std::vector<value_type> m_coefs;
 
-  // if coefs includes free coef
-  linear_equation(const std::vector<value_type> &coefs) : m_coefs{coefs} {}
+  linear_equation(size_type variables) { m_coefs.resize(variables + 1); }
+  linear_equation(const std::vector<value_type> &coefs) : m_coefs{coefs} {} // if coefs includes free coef
   linear_equation(std::initializer_list<value_type> list) : linear_equation{list.begin(), list.end()} {}
 
   template <std::input_iterator it> linear_equation(it start, it finish) {
     m_coefs.reserve(static_cast<size_type>(std::distance(start, finish)));
     std::copy(start, finish, std::back_inserter(m_coefs));
   }
+
+  auto       &operator[](size_type i) { return m_coefs[i]; }
+  const auto &operator[](size_type i) const { return m_coefs[i]; }
+
+  auto       &free_coeff() { return m_coefs.back(); }
+  const auto &free_coeff() const { return m_coefs.back(); }
+
+  void reset() { std::fill(m_coefs.begin(), m_coefs.end(), 0); }
 
   size_type size() const { return m_coefs.size(); }
   size_type vars() const { return size() - 1; }
@@ -50,25 +58,27 @@ template <std::floating_point T> class linear_equation_system final {
 public:
   using value_type = T;
   using size_type = std::size_t;
-  using equation_t = linear_equation<value_type>;
+  using equation_type = linear_equation<value_type>;
 
 private:
-  std::vector<equation_t> m_equations;
+  std::vector<equation_type> m_equations;
 
   mutable matrix<T> m_matrix;
   mutable bool      m_changed_flag = true;
 
 public:
+  linear_equation_system() = default;
   linear_equation_system(const size_type size) { m_equations.reserve(size); }
-  linear_equation_system(const std::vector<equation_t> m_equations) : m_equations{m_equations} {}
-  linear_equation_system(std::initializer_list<equation_t> list) : linear_equation_system{list.begin(), list.end()} {}
+  linear_equation_system(const std::vector<equation_type> m_equations) : m_equations{m_equations} {}
+  linear_equation_system(std::initializer_list<equation_type> list)
+      : linear_equation_system{list.begin(), list.end()} {}
 
   template <std::input_iterator it> linear_equation_system(it start, it finish) {
     m_equations.reserve(static_cast<size_type>(std::distance(start, finish)));
     std::copy(start, finish, std::back_inserter(m_equations));
   }
 
-  void push(const equation_t &eq) {
+  void push(const equation_type &eq) {
     m_equations.push_back(eq);
     m_changed_flag = true;
   }
