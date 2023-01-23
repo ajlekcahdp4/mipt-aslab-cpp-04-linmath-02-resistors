@@ -2,6 +2,7 @@
 #include <cctype>
 #include <chrono>
 #include <cmath>
+#include <cstdlib>
 #include <iostream>
 #include <iterator>
 #include <set>
@@ -151,7 +152,7 @@ std::optional<std::vector<circuits::network_edge>> parse_circuit() {
 
 #endif
 
-int main(int argc, char *argv[]) {
+int main(int argc, char *argv[]) try {
   bool non_verbose = false;
 
   po::options_description desc("Available options");
@@ -206,7 +207,13 @@ int main(int argc, char *argv[]) {
     currents_to_print.push_back(std::make_tuple(temporary_first, temporary_second, v.first, v.second));
   }
 
-  auto currents = network.solve().second;
+  network_type::solution_currents currents;
+  try {
+    currents = network.solve().second;
+  } catch (throttle::circuits::circuit_error &e) {
+    std::cerr << "Bad circuit, bailing out. Here's the error message: " << e.what() << "\n";
+    return EXIT_FAILURE;
+  }
 
   for (const auto &v : currents_to_print) {
     auto [temp_1, temp_2, name_1, name_2] = v;
@@ -222,8 +229,8 @@ int main(int argc, char *argv[]) {
     }
   }
 
-} // catch (std::exception &e) {
-  // std::cerr << "Encountered error: " << e.what() << "\n";
-//} catch (...) {
-// std::cerr << "Unknown error\n";
-//}
+} catch (std::exception &e) {
+  std::cerr << "Encountered error: " << e.what() << "\n";
+} catch (...) {
+  std::cerr << "Unknown error\n";
+}

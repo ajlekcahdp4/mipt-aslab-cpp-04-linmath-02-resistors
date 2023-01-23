@@ -17,9 +17,11 @@
 #include "linmath/matrix.hpp"
 
 #include <algorithm>
+#include <exception>
 #include <iterator>
 #include <optional>
 #include <stdexcept>
+#include <string>
 #include <unordered_map>
 #include <unordered_set>
 #include <utility>
@@ -32,6 +34,14 @@
 namespace throttle::circuits {
 
 using resistance_emf_pair = std::pair<double, double>;
+
+class circuit_error : public std::exception {
+  std::string m_message;
+
+public:
+  circuit_error(const std::string &msg) : m_message{msg} {}
+  const char *what() const noexcept override { return m_message.c_str(); }
+};
 
 namespace detail {
 template <typename T> class connected_resistor_network {
@@ -159,6 +169,9 @@ public:
 
     // Solve the linear system of equations to find unkown potentials and currents.
     auto system = make_system();
+
+    auto res = system.solve();
+    if (!res) throw circuit_error{"The circuit is undefined. Possible infinite current loop"};
     auto unknowns = system.solve().value();
 
     // Fill base node potential with zero.
