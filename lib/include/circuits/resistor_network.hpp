@@ -241,7 +241,7 @@ public:
     return result;
   }
 
-  void insert(unsigned first, unsigned second, double resistance = 0, double emf = 0) {
+  void insert(T first, T second, double resistance = 0, double emf = 0) {
     resistance_emf_pair fwd_pair = {resistance, emf}, bck_pair = {resistance, -emf};
     m_graph.insert_edge({first, second}, fwd_pair, bck_pair);
   }

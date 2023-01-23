@@ -152,6 +152,63 @@ std::optional<std::vector<circuits::network_edge>> parse_circuit() {
 
 #endif
 
+int calculate_currents(auto circuit, bool verbose) {
+  using network_type = throttle::circuits::resistor_network<unsigned>;
+  network_type network;
+
+  std::unordered_map<unsigned, unsigned> input_vertex_to_mapped;
+  std::unordered_map<unsigned, unsigned> mapped_to_input_vertex;
+
+  unsigned count = 0;
+
+  const auto get_or_insert = [&count, &input_vertex_to_mapped, &mapped_to_input_vertex](unsigned index) {
+    if (input_vertex_to_mapped.contains(index)) {
+      return input_vertex_to_mapped.at(index);
+    }
+
+    auto this_index = count++;
+    input_vertex_to_mapped[index] = this_index;
+    mapped_to_input_vertex[this_index] = index;
+
+    return this_index;
+  };
+
+  std::vector<std::tuple<unsigned, unsigned, unsigned, unsigned>> currents_to_print;
+
+  for (const auto &v : circuit) {
+    auto first_mapped = get_or_insert(v.first), second_mapped = get_or_insert(v.second);
+    auto temporary_first = count++, temporary_second = count++;
+    network.insert(first_mapped, temporary_first);
+    network.insert(temporary_first, temporary_second, v.res, v.emf.value_or(0.0));
+    network.insert(temporary_second, second_mapped);
+    currents_to_print.push_back(std::make_tuple(temporary_first, temporary_second, v.first, v.second));
+  }
+
+  network_type::solution_currents currents;
+  try {
+    currents = network.solve().second;
+  } catch (throttle::circuits::circuit_error &e) {
+    std::cerr << "Bad circuit, bailing out. Here's the error message: " << e.what() << "\n";
+    return EXIT_FAILURE;
+  }
+
+  for (const auto &v : currents_to_print) {
+    auto [temp_1, temp_2, name_1, name_2] = v;
+    constexpr auto precision = 1e-6;
+
+    auto current = currents.at(temp_1).at(temp_2);
+    auto rounded_current = (std::abs(current) > precision ? current : 0.0);
+
+    if (verbose) {
+      std::cout << name_1 << " -- " << name_2 << ": " << rounded_current << " A\n";
+    } else {
+      std::cout << rounded_current << "\n";
+    }
+  }
+
+  return EXIT_SUCCESS;
+}
+
 int main(int argc, char *argv[]) try {
   bool non_verbose = false;
 
@@ -175,60 +232,7 @@ int main(int argc, char *argv[]) try {
   }
 
   auto result = parsed.value();
-
-  using network_type = throttle::circuits::resistor_network<unsigned>;
-  network_type network;
-
-  std::unordered_map<unsigned, unsigned> input_vertex_to_mapped;
-  std::unordered_map<unsigned, unsigned> mapped_to_input_vertex;
-
-  unsigned count = 0;
-
-  const auto get_or_insert = [&count, &input_vertex_to_mapped, &mapped_to_input_vertex](unsigned index) {
-    if (input_vertex_to_mapped.contains(index)) {
-      return input_vertex_to_mapped.at(index);
-    }
-
-    auto this_index = count++;
-    input_vertex_to_mapped[index] = this_index;
-    mapped_to_input_vertex[this_index] = index;
-
-    return this_index;
-  };
-
-  std::vector<std::tuple<unsigned, unsigned, unsigned, unsigned>> currents_to_print;
-
-  for (const auto &v : result) {
-    auto first_mapped = get_or_insert(v.first), second_mapped = get_or_insert(v.second);
-    auto temporary_first = count++, temporary_second = count++;
-    network.insert(first_mapped, temporary_first);
-    network.insert(temporary_first, temporary_second, v.res, v.emf.value_or(0.0));
-    network.insert(temporary_second, second_mapped);
-    currents_to_print.push_back(std::make_tuple(temporary_first, temporary_second, v.first, v.second));
-  }
-
-  network_type::solution_currents currents;
-  try {
-    currents = network.solve().second;
-  } catch (throttle::circuits::circuit_error &e) {
-    std::cerr << "Bad circuit, bailing out. Here's the error message: " << e.what() << "\n";
-    return EXIT_FAILURE;
-  }
-
-  for (const auto &v : currents_to_print) {
-    auto [temp_1, temp_2, name_1, name_2] = v;
-    constexpr auto precision = 1e-6;
-
-    auto current = currents[temp_1][temp_2];
-    auto rounded_current = (std::abs(current) > precision ? current : 0.0);
-
-    if (!non_verbose) {
-      std::cout << name_1 << " -- " << name_2 << ": " << rounded_current << " A\n";
-    } else {
-      std::cout << rounded_current << "\n";
-    }
-  }
-
+  return calculate_currents(result, !non_verbose);
 } catch (std::exception &e) {
   std::cerr << "Encountered error: " << e.what() << "\n";
 } catch (...) {

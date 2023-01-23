@@ -139,7 +139,7 @@ public:
       }
     }
 
-    std::unordered_map<unsigned, self_type> connected_representatives;
+    std::unordered_map<T, self_type> connected_representatives;
     // find_set does not change the component representaive. Here we iterate over all the nodes and find their
     // representaive to find all connected components.
     for (const auto &v : m_vertices) {
