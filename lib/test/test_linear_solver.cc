@@ -1,10 +1,14 @@
 #include <gtest/gtest.h>
 #include <iostream>
 
+#include "datastructures/vector.hpp"
 #include "linmath/linear_solver.hpp"
 #include "linmath/matrix.hpp"
 
 namespace linmath = throttle::linmath;
+
+using linear_equation_d = typename throttle::linmath::linear_equation<double>;
+using linear_equation_system_d = typename throttle::linmath::linear_equation_system<double>;
 
 TEST(test_linear_solver, test_1) {
   linmath::matrix_d coefs{3, 3, {1, 1, 1, 0, 2, 5, 2, 5, -1}};
@@ -45,4 +49,26 @@ TEST(test_linear_solver, singular_system) {
   linmath::matrix_d coefs{4, 3, {1, 1, 1, 0, 5, -10, 0, 2, 5, 2, 5, -1}};
   linmath::matrix_d col{4, 1, {6, 8, -4, 27}};
   EXPECT_THROW(linmath::nonsingular_solver(coefs, col), std::runtime_error);
+}
+
+TEST(test_equation_system, test_1) {
+  linear_equation_d        eq1{{1, -1, 7}};
+  linear_equation_d        eq2{{3, 2, 16}};
+  linear_equation_system_d eqsys{{eq1, eq2}};
+
+  auto res = eqsys.solve();
+  EXPECT_TRUE(res.has_value());
+  linmath::matrix_d sol{2, 1, {6, -1}};
+  EXPECT_EQ(res.value().cols(), sol.cols());
+  EXPECT_EQ(res.value(), sol);
+}
+
+TEST(test_equation_system, test_2) {
+  linear_equation_d        eq1{{1, 1, 1, 6}};
+  linear_equation_d        eq2{{0, 2, 5, -4}};
+  linear_equation_d        eq3{{2, 5, -1, 27}};
+  linear_equation_system_d eqsys{{eq1, eq2, eq3}};
+  linmath::matrix_d        sol{3, 1, {5, 3, -2}};
+  auto                     res = eqsys.solve();
+  EXPECT_EQ(res.value(), sol);
 }
