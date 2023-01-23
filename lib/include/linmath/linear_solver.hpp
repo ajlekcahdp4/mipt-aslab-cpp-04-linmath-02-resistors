@@ -51,9 +51,16 @@ template <std::floating_point T> struct linear_equation_system final {
 
   size_type size() const { return equations.size(); }
 
+  size_type n_vars() const {
+    unsigned N = 0;
+    for (auto &eq : equations)
+      if (eq.size() > N) N = eq.size();
+    return N;
+  }
+
   matrix<value_type> get_xtnd_matrix() const {
     auto rows = size();
-    auto cols = equations[0].size() + 1;
+    auto cols = n_vars() + 1;
 
     matrix<value_type> xtnd_matrix{rows, cols};
 

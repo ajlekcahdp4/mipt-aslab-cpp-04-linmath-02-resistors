@@ -72,3 +72,13 @@ TEST(test_equation_system, test_2) {
   auto                     res = eqsys.solve();
   EXPECT_EQ(res.value(), sol);
 }
+
+TEST(test_equation_system, test_3) {
+  linear_equation_d        eq1{{1, 1, 1, 6}};
+  linear_equation_d        eq2{{5, 2, 0, -4}};
+  linear_equation_d        eq3{{-1, 5, 2, 27}};
+  linear_equation_system_d eqsys{{eq1, eq2, eq3}};
+  linmath::matrix_d        sol{3, 1, {-2, 3, 5}};
+  auto                     res = eqsys.solve();
+  EXPECT_EQ(res.value(), sol);
+}
