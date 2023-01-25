@@ -19,7 +19,7 @@ ctest
 ```
 
 ## 3. Test driver program
-The main test driver is _network_. Either Boost.Spirit X3 or Bison/Flex is required to build the parser. Additionally, Boost is an unconditional requirement for program options and misc utilities.
+The main test driver is _network_. Bison/Flex is required to build the parser. Additionally, Boost is an unconditional requirement for program options and misc utilities.
 
 ```sh
 # Build and install
