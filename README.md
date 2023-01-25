@@ -6,8 +6,6 @@ Current calculation in networks of resistors & DC sources.
 ### Linux
 ```sh
 cmake -S ./ -B build/ -DCMAKE_BUILD_TYPE=Release
-# For Boost.Spirit parser, by default a bison one is used
-cmake -S ./ -B build/ -DCMAKE_BUILD_TYPE=Release -DUSE_SPIRIT=ON
 
 cd build/
 make -j12 install

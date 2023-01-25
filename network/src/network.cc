@@ -24,7 +24,7 @@
 #include <boost/program_options.hpp>
 #include <boost/program_options/option.hpp>
 
-#ifndef USE_BISON
+#if 0
 
 #include <boost/fusion/adapted/std_pair.hpp>
 #include <boost/fusion/adapted/std_tuple.hpp>
@@ -47,7 +47,7 @@
 
 namespace po = boost::program_options;
 
-#ifndef USE_BISON
+#if 0
 
 namespace x3 = boost::spirit::x3;
 namespace ascii = x3::ascii;
