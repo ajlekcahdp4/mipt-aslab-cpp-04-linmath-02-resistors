@@ -10,7 +10,7 @@ set(UNIT_TEST_SOURCES
   test/main.cc
 )
 
-if (ENABLE_GTEST)
+if (ENABLE_GTEST AND NOT RESISTORS_NO_TESTING__)
   add_executable(unit_test ${UNIT_TEST_SOURCES})
   target_include_directories(unit_test PRIVATE src include)
   target_link_libraries(unit_test throttle ${GTEST_BOTH_LIBRARIES})
