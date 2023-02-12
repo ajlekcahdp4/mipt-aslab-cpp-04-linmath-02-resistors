@@ -28,6 +28,6 @@ add_executable(comp ${COMP_SOURCES})
 target_link_libraries(comp PRIVATE throttle Boost::program_options)
 install(TARGETS comp DESTINATION ${CMAKE_CURRENT_SOURCE_DIR}/bin)
 
-if(BASH_PROGRAM)
+if(BASH_PROGRAM AND NOT RESISTORS_NO_TESTING__)
   add_test(NAME test.network COMMAND ${BASH_PROGRAM} ${CMAKE_CURRENT_SOURCE_DIR}/test.sh "$<TARGET_FILE:network>" ${CMAKE_CURRENT_SOURCE_DIR} "$<TARGET_FILE:comp>")
 endif()

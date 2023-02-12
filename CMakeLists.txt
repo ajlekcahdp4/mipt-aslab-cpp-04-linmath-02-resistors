@@ -20,7 +20,11 @@ endif()
 find_package(GTest)
 set(NOGTEST ON CACHE BOOL "Disable GoogleTest")
 
-enable_testing()
+set(RESISTORS_NO_TESTING__ OFF CACHE BOOL "Disable testing")
+if (NOT RESISTORS_NO_TESTING__)
+  enable_testing()
+endif()
+
 if(NOT NOGTEST AND GTEST_FOUND AND CMAKE_MINOR_VERSION GREATER_EQUAL 20)
   set(ENABLE_GTEST ON)
 else()
