@@ -11,16 +11,9 @@
 #pragma once
 
 #include <iterator>
+#include <concepts>
 
 namespace throttle::utility {
-
-static inline int clz(unsigned x) { return __builtin_clz(x); }
-static inline int clz(unsigned long x) { return __builtin_clzl(x); }
-
-static inline int ctz(unsigned x) { return __builtin_ctz(x); }
-static inline int ctz(unsigned long x) { return __builtin_ctzl(x); }
-
-#include <concepts>
 
 template <typename T> struct contiguous_iterator {
   using iterator_category = std::random_access_iterator_tag;

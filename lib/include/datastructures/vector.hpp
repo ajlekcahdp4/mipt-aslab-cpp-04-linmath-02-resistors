@@ -21,6 +21,7 @@
 #include <memory>
 #include <stdexcept>
 #include <type_traits>
+#include <bit>
 
 #include "utility.hpp"
 
@@ -59,7 +60,7 @@ private:
 
 public:
   static size_type amortized_buffer_size(size_type x) {
-    return size_type{1} << (CHAR_BIT * sizeof(size_type) - utility::clz(x));
+    return size_type{1} << (CHAR_BIT * sizeof(size_type) - std::countr_zero(x));
   }
 
 public:
