@@ -11,6 +11,7 @@
 #pragma once
 
 #include <algorithm>
+#include <bit>
 #include <climits>
 #include <concepts>
 #include <cstddef>
@@ -21,7 +22,6 @@
 #include <memory>
 #include <stdexcept>
 #include <type_traits>
-#include <bit>
 
 #include "utility.hpp"
 
@@ -60,7 +60,7 @@ private:
 
 public:
   static size_type amortized_buffer_size(size_type x) {
-    return size_type{1} << (CHAR_BIT * sizeof(size_type) - std::countr_zero(x));
+    return size_type{1} << (CHAR_BIT * sizeof(size_type) - std::countl_zero(x));
   }
 
 public:
@@ -68,7 +68,9 @@ public:
       : m_buffer_ptr{static_cast<pointer>(::operator new(sizeof(value_type) * default_capacity))},
         m_past_capacity_ptr{m_buffer_ptr + default_capacity}, m_past_end_ptr{m_buffer_ptr} {}
 
-  vector(size_type count, const value_type &value = value_type{}) requires std::copyable<value_type> {
+  vector(size_type count, const value_type &value = value_type{})
+  requires std::copyable<value_type>
+  {
     vector temp{};
     temp.reserve(count);
 
@@ -105,7 +107,9 @@ public:
     std::swap(m_past_end_ptr, rhs.m_past_end_ptr);
   }
 
-  vector(const vector &other) requires std::copyable<value_type> {
+  vector(const vector &other)
+  requires std::copyable<value_type>
+  {
     vector temp{};
     temp.reserve(other.capacity());
 
@@ -120,7 +124,9 @@ public:
     *this = std::move(temp);
   }
 
-  vector &operator=(const vector &rhs) requires std::copyable<value_type> {
+  vector &operator=(const vector &rhs)
+  requires std::copyable<value_type>
+  {
     if (this == std::addressof(rhs)) return *this;
     vector temp{rhs};
     *this = std::move(temp);
@@ -157,7 +163,9 @@ public:
 
   void reserve(size_type cap) { reserve_exact(amortized_buffer_size(cap)); }
 
-  void resize(size_type count, const value_type &val = value_type{}) requires std::copyable<value_type> {
+  void resize(size_type count, const value_type &val = value_type{})
+  requires std::copyable<value_type>
+  {
     const size_type sz = size();
     if (count == sz) return;
 
@@ -191,13 +199,17 @@ private:
   }
 
 public:
-  void push_back(const value_type &val) requires std::copyable<value_type> {
+  void push_back(const value_type &val)
+  requires std::copyable<value_type>
+  {
     reserve_if_necessary();
     value_type tmp{val};
     new (m_past_end_ptr++) value_type{std::move(tmp)};
   }
 
-  void push_back(value_type &&val) requires std::movable<value_type> {
+  void push_back(value_type &&val)
+  requires std::movable<value_type>
+  {
     reserve_if_necessary();
     new (m_past_end_ptr++) value_type{std::move(val)};
   }
